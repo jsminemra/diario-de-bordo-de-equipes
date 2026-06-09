@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro — Diário de Bordo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #1a1a2e;
+            text-align: center;
+        }
+
+        .erro-global {
+            background: #fdecea;
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .campo {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 0.3rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .erro-campo {
+            color: #c0392b;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.65rem;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4338ca;
+        }
+
+        .link-login {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            color: #666;
+        }
+
+        .link-login a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link-login a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Criar conta</h1>
+
+        <div class="erro-global" th:if="${erro}">
+            <p th:text="${erro}"></p>
+        </div>
+
+        <form th:action="@{/cadastro}" th:object="${cadastroDTO}" method="post">
+
+            <div class="campo">
+                <label>Nome</label>
+                <input type="text" th:field="*{name}" placeholder="Seu nome completo"/>
+                <span class="erro-campo" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+            </div>
+
+            <div class="campo">
+                <label>E-mail</label>
+                <input type="email" th:field="*{email}" placeholder="seu@email.com"/>
+                <span class="erro-campo" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+            </div>
+
+            <div class="campo">
+                <label>Senha</label>
+                <input type="password" th:field="*{password}" placeholder="Mínimo 8 caracteres"/>
+                <span class="erro-campo" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+            </div>
+
+            <div class="campo">
+                <label>Confirmar senha</label>
+                <input type="password" th:field="*{confirmPassword}" placeholder="Repita a senha"/>
+                <span class="erro-campo" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+            </div>
+
+            <div class="campo">
+                <label>Perfil</label>
+                <select th:field="*{role}">
+                    <option value="">Selecione um perfil</option>
+                    <option th:each="role : ${roles}"
+                            th:value="${role}"
+                            th:text="${role}">
+                    </option>
+                </select>
+                <span class="erro-campo" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></span>
+            </div>
+
+            <button type="submit">Cadastrar</button>
+        </form>
+
+        <div class="link-login">
+            Já tem conta? <a href="/login">Entrar</a>
+        </div>
+    </div>
+</body>
+</html>
