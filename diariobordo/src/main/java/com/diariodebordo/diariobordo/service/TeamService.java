@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TeamService {
@@ -84,5 +85,12 @@ public class TeamService {
     
     public List<Team> getTeamsByLeader(User leader) {
         return teamRepository.findByLeader(leader);
+    }
+
+    public Optional<Team> getTeamByMember(User member) {
+        return teamRepository.findAll().stream()
+                .filter(team -> team.getMembers().stream()
+                        .anyMatch(m -> m.getId().equals(member.getId())))
+                .findFirst();
     }
 }
