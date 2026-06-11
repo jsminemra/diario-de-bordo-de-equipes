@@ -17,9 +17,7 @@ public class UserService {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
-        // TO-DO: remover comentário após Diogo configurar o Spring Security (US-01b)
-        // user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setPassword(user.getPassword()); // temporário — senha sem encode
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
