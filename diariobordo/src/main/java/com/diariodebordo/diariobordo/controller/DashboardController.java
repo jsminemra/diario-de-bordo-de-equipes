@@ -6,6 +6,7 @@ import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.TeamService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
@@ -22,7 +23,11 @@ public class DashboardController {
     }
     
     @GetMapping("/member/feed")
-    public String memberFeed() {
+    public String memberFeed(Authentication auth, Model model) {
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        model.addAttribute("user", user);
+        model.addAttribute("userName", user.getName());
         return "member/feed";
     }
     
