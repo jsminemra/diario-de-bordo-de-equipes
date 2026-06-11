@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-DiariobordoApplication<diariobordo>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.diariodebordo.diariobordo.DiariobordoApplication",
+            "projectName": "diariobordo",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
