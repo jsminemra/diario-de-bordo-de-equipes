@@ -21,11 +21,6 @@ public class DashboardController {
         this.userRepository = userRepository;
     }
     
-    @GetMapping("/member/feed")
-    public String memberFeed() {
-        return "member/feed";
-    }
-    
     @GetMapping("/leader/team")
     public String leaderTeam(Authentication auth) {
         String email = auth.getName();
@@ -34,18 +29,10 @@ public class DashboardController {
         
         List<Team> teams = teamService.getTeamsByLeader(leader);
         
-        // Se já tem equipe, vai para a página da equipe
         if (!teams.isEmpty()) {
             return "redirect:/leader/team/" + teams.get(0).getId();
         }
         
-        // Se não tem equipe, vai para página de criação
         return "redirect:/leader/team/create";
     }
-    
-    /*@GetMapping("/professor/panel")
-     public String professorPanel() {
-        return "redirect:/professor/panel";
-     }
-        */
 }

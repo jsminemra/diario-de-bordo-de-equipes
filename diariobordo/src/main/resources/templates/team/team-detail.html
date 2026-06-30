@@ -2,59 +2,202 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${team.name} + ' - Detalhes da Equipe'">Equipe</title>
+    <title th:text="${team != null ? team.name + ' - Detalhes da Equipe' : 'Detalhes da Equipe'}">Equipe</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-4">
         <div class="row">
-            <div class="col-md-8 mx-auto">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h4 th:text="${team.name}"></h4>
-                        <small>Líder: <span th:text="${team.leader.name}"></span></small>
-                    </div>
-                    <div class="card-body">
-                        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-                        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-                        
-                        <!-- Adicionar Membro -->
-                        <h5>Adicionar Membro</h5>
-                        <form th:action="@{/leader/team/{teamId}/add-member(teamId=${team.id})}" 
-                              th:object="${addMemberDTO}" 
-                              method="post" 
-                              class="mb-4">
-                            <div class="input-group">
-                                <input type="email" class="form-control" th:field="*{email}" 
-                                       placeholder="E-mail do membro" required>
-                                <button type="submit" class="btn btn-success">Adicionar</button>
-                            </div>
-                            <div th:if="${#fields.hasErrors('email')}" class="text-danger" th:errors="*{email}"></div>
-                        </form>
-                        
-                        <!-- Lista de Membros -->
-                        <h5>Membros da Equipe (<span th:text="${team.members.size()}"></span>)</h5>
-                        <div class="list-group">
-                            <div th:each="member : ${team.members}" class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong th:text="${member.name}"></strong>
-                                        <br>
-                                        <small class="text-muted" th:text="${member.email}"></small>
+            <div class="col-md-10 mx-auto">
+                
+                <!-- Verificar se a equipe existe -->
+                <div th:if="${team == null}" class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> Equipe não encontrada.
+                </div>
+                
+                <div th:if="${team != null}">
+                    
+                    <!-- ========================================= -->
+                    <!-- HEADER DA EQUIPE                         -->
+                    <!-- ========================================= -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h4 th:text="${team.name}">Nome da Equipe</h4>
+                            <small>Líder: <span th:text="${team.leader != null ? team.leader.name : 'N/A'}"></span></small>
+                        </div>
+                        <div class="card-body">
+                            
+                            <!-- Alertas -->
+                            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+                            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+                            <!-- ========================================= -->
+                            <!-- SEÇÃO 1: SPRINT ATIVA                    -->
+                            <!-- ========================================= -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-tasks text-warning"></i> Sprint Ativa
+                                </h5>
+                                
+                                <div th:if="${sprintAtiva != null}">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <p><strong>Nome:</strong> <span th:text="${sprintAtiva.name}"></span></p>
+                                            <p><strong>Período:</strong> 
+                                                <span th:text="${#temporals.format(sprintAtiva.startDate, 'dd/MM/yyyy')}"></span> 
+                                                até 
+                                                <span th:text="${#temporals.format(sprintAtiva.endDate, 'dd/MM/yyyy')}"></span>
+                                            </p>
+                                            <p><strong>Status:</strong> <span class="badge bg-success">Ativa</span></p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <span class="badge bg-primary" style="font-size: 1rem;">
+                                                <i class="fas fa-calendar"></i> 
+                                                <span th:text="${#temporals.format(sprintAtiva.startDate, 'dd/MM')}"></span>
+                                                -
+                                                <span th:text="${#temporals.format(sprintAtiva.endDate, 'dd/MM')}"></span>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span th:if="${member.id == team.leader.id}" class="badge bg-warning">Líder</span>
-                                    <span th:unless="${member.id == team.leader.id}" class="badge bg-secondary">Membro</span>
+                                </div>
+                                
+                                <div th:unless="${sprintAtiva != null}">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        Nenhuma sprint ativa no momento.
+                                        <a th:href="@{/leader/team/{teamId}/sprint/create(teamId=${team.id})}" 
+                                           class="alert-link">Clique aqui para criar uma sprint</a>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <a href="/leader/dashboard" class="btn btn-secondary">Voltar</a>
+
+                            <!-- ========================================= -->
+                            <!-- SEÇÃO 2: REGISTRO DIÁRIO DO LÍDER        -->
+                            <!-- ========================================= -->
+                            <div class="mb-4">
+                                <h5 class="border-bottom pb-2">
+                                    <i class="fas fa-edit text-success"></i> Meu Registro Diário
+                                </h5>
+                                
+                                <div th:if="${!temSprint}" class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Nenhuma sprint ativa. Crie uma sprint para começar os registros.
+                                </div>
+                                
+                                <div th:if="${temSprint}">
+                                    <div th:if="${jaRegistrou}" class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> Você já registrou hoje. Edite se necessário.
+                                    </div>
+                                    
+                                    <form th:action="@{/leader/team/{teamId}/entry(teamId=${team.id})}" 
+                                          th:object="${dailyEntryDTO}" 
+                                          method="post">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">📝 O que fez hoje?</label>
+                                                <textarea class="form-control" rows="2" 
+                                                          name="whatWasDone"
+                                                          th:field="*{whatWasDone}" 
+                                                          placeholder="Descreva o que realizou..."></textarea>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">🎯 O que fará amanhã?</label>
+                                                <textarea class="form-control" rows="2" 
+                                                          name="whatWillBeDone"
+                                                          th:field="*{whatWillBeDone}" 
+                                                          placeholder="Descreva seus próximos passos..."></textarea>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">⚠️ Impedimentos?</label>
+                                                <textarea class="form-control" rows="2" 
+                                                          name="impediments"
+                                                          th:field="*{impediments}" 
+                                                          placeholder="Algo está bloqueando?"></textarea>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-success mt-2">
+                                            <i class="fas fa-save"></i> 
+                                            <span th:if="${jaRegistrou}">Atualizar Registro</span>
+                                            <span th:unless="${jaRegistrou}">Salvar Registro</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <!-- ========================================= -->
+                            <!-- SEÇÃO 3: GERENCIAMENTO DA EQUIPE         -->
+                            <!-- ========================================= -->
+                            <h5 class="border-bottom pb-2">
+                                <i class="fas fa-users-cog text-primary"></i> Gerenciar Equipe
+                            </h5>
+                            
+                            <!-- Botões de ação -->
+                            <div class="mb-3 d-flex flex-wrap gap-2">
+                                <a th:href="@{/leader/team/{teamId}/sprint/create(teamId=${team.id})}" 
+                                   class="btn btn-success">
+                                    <i class="fas fa-rocket"></i> Criar Nova Sprint
+                                </a>
+                                
+                                <a th:href="@{/leader/team/{teamId}/history(teamId=${team.id})}" 
+                                   class="btn btn-info">
+                                    <i class="fas fa-history"></i> Ver Histórico de Registros
+                                </a>
+                                
+                                <!-- LINK PARA HEATMAP -->
+                                <a href="/leader/heatmap" class="btn btn-outline-primary">
+                                    <i class="fas fa-fire"></i> Ver Heatmap
+                                </a>
+                            </div>
+                            
+                            <!-- Adicionar Membro -->
+                            <div class="mb-3">
+                                <label class="form-label">Adicionar Membro</label>
+                                <form th:action="@{/leader/team/{teamId}/add-member(teamId=${team.id})}" 
+                                      method="post" 
+                                      class="d-flex gap-2">
+                                    <input type="email" class="form-control flex-grow-1" 
+                                           name="email"
+                                           placeholder="E-mail do membro" required>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-user-plus"></i> Adicionar
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Lista de Membros -->
+                            <h6>Membros da Equipe (<span th:text="${team.members != null ? team.members.size() : 0}"></span>)</h6>
+                            <div class="list-group">
+                                <div th:each="member : ${team.members}" class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong th:text="${member.name}">Nome</strong>
+                                            <br>
+                                            <small class="text-muted" th:text="${member.email}">email@email.com</small>
+                                        </div>
+                                        <span th:if="${member.id == team.leader.id}" class="badge bg-warning">Líder</span>
+                                        <span th:unless="${member.id == team.leader.id}" class="badge bg-secondary">Membro</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <a href="/leader/dashboard" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Voltar
+                                </a>
+                            </div>
                         </div>
                     </div>
+                    
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

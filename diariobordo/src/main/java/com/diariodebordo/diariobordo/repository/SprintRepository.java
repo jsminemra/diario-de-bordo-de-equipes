@@ -12,4 +12,9 @@ public interface SprintRepository extends JpaRepository<Sprint, Long> {
     List<Sprint> findByTeam(Team team);
 
     Optional<Sprint> findByTeamAndStatus(Team team, Sprint.Status status);
+
+    Optional<Sprint> findFirstByOrderByIdDesc();
+
+    boolean existsByTeamAndStatus(Team team, Sprint.Status status);
+    
 }
