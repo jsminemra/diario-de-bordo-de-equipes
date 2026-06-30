@@ -227,7 +227,7 @@
                     <small class="text-muted">
                         <i class="fas fa-database"></i> Fonte: Registros do Diário de Bordo
                         <span class="ms-2">
-                            <i class="fas fa-undo-alt"></i> Última atualização: <span th:text="${#temporals.format(#dates.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+                            <i class="fas fa-undo-alt"></i> Última atualização: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
                         </span>
                     </small>
                 </div>

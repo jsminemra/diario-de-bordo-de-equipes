@@ -1,7 +1,9 @@
 package com.diariodebordo.diariobordo.controller;
 
 import com.diariodebordo.diariobordo.config.SecurityConfig;
+import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
@@ -29,6 +33,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private TeamRepository teamRepository;
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
@@ -72,10 +79,18 @@ class AuthControllerTest {
     @WithMockUser(username = "membro@email.com", roles = "MEMBER")
     void getDashboardComRoleMemberDeveRedirecionarParaMemberFeed() throws Exception {
         User user = new User();
+        user.setId(1L);
         user.setEmail("membro@email.com");
         user.setRole(User.Role.MEMBER);
 
+        List<User> members = new ArrayList<>();
+        members.add(user);
+        Team team = new Team();
+        team.setId(1L);
+        team.setMembers(members);
+
         when(userRepository.findByEmail("membro@email.com")).thenReturn(Optional.of(user));
+        when(teamRepository.findAll()).thenReturn(List.of(team));
 
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection())
