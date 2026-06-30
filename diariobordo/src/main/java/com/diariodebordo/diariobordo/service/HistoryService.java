@@ -4,6 +4,7 @@ import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import org.springframework.lang.Nullable;
 import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.TeamRepository;
@@ -26,6 +27,13 @@ public class HistoryService {
         this.dailyEntryRepository = dailyEntryRepository;
         this.sprintRepository = sprintRepository;
         this.teamRepository = teamRepository;
+    }
+
+    @Nullable
+    public Sprint getSprintAtiva(User user) {
+        Team userTeam = getUserTeam(user);
+        if (userTeam == null) return null;
+        return sprintRepository.findByTeamAndStatus(userTeam, Sprint.Status.ATIVA).orElse(null);
     }
 
     public List<DailyEntry> getUserHistory(User user, LocalDate startDate, LocalDate endDate) {

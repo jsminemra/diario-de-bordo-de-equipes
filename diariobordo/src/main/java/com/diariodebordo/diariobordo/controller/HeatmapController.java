@@ -42,11 +42,11 @@ public class HeatmapController {
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        List<HeatmapDataDTO> heatmapData = heatmapService.getHeatmapData(user, 90);
+        List<HeatmapDataDTO> heatmapData = heatmapService.getHeatmapData(user, 180);
 
         List<List<HeatmapDataDTO>> weeks = new ArrayList<>();
         List<HeatmapDataDTO> currentWeek = new ArrayList<>();
-        
+
         for (int i = 0; i < heatmapData.size(); i++) {
             currentWeek.add(heatmapData.get(i));
             if ((i + 1) % 7 == 0 || i == heatmapData.size() - 1) {
@@ -62,7 +62,7 @@ public class HeatmapController {
         model.addAttribute("heatmapData", heatmapData);
         model.addAttribute("weeks", weeks);
         model.addAttribute("user", user);
-        model.addAttribute("days", 90);
+        model.addAttribute("days", 180);
         model.addAttribute("role", role);
         model.addAttribute("diasComRegistro", diasComRegistro);
         model.addAttribute("percentual", String.format("%.0f", percentual));

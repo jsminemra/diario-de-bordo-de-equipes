@@ -31,16 +31,16 @@
             background-color: #ebedf0;
         }
         .heatmap-square.level-1 {
-            background-color: #9be9a8;
+            background-color: #cce5ff;
         }
         .heatmap-square.level-2 {
-            background-color: #40c463;
+            background-color: #66b2ff;
         }
         .heatmap-square.level-3 {
-            background-color: #30a14e;
+            background-color: #0d6efd;
         }
         .heatmap-square.level-4 {
-            background-color: #216e39;
+            background-color: #0a3d91;
         }
         .heatmap-legend {
             display: flex;
@@ -187,10 +187,10 @@
                 <div class="heatmap-legend">
                     <span class="small text-muted">Menos</span>
                     <div class="square" style="background-color: #ebedf0;"></div>
-                    <div class="square" style="background-color: #9be9a8;"></div>
-                    <div class="square" style="background-color: #40c463;"></div>
-                    <div class="square" style="background-color: #30a14e;"></div>
-                    <div class="square" style="background-color: #216e39;"></div>
+                    <div class="square" style="background-color: #cce5ff;"></div>
+                    <div class="square" style="background-color: #66b2ff;"></div>
+                    <div class="square" style="background-color: #0d6efd;"></div>
+                    <div class="square" style="background-color: #0a3d91;"></div>
                     <span class="small text-muted">Mais</span>
                     <span class="small text-muted ms-3">
                         <i class="fas fa-info-circle"></i> Passe o mouse sobre um quadrado para ver detalhes
@@ -256,7 +256,7 @@
                 tooltipDate.textContent = '📅 ' + date;
                 if (count > 0) {
                     tooltipSummary.textContent = '✅ ' + summary;
-                    tooltipSummary.style.color = '#9be9a8';
+                    tooltipSummary.style.color = '#cce5ff';
                 } else {
                     tooltipSummary.textContent = '⚪ Sem registro';
                     tooltipSummary.style.color = '#aaa';

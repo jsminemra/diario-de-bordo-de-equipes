@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -102,6 +104,20 @@ public class DailyEntryService {
 
     public Optional<DailyEntry> buscarRegistroDeHoje(User user) {
         return dailyEntryRepository.findByUserAndEntryDate(user, LocalDate.now());
+    }
+
+    public List<User> getMembrosAusentesHoje(User user) {
+        Team userTeam = getUserTeam(user);
+        if (userTeam == null) return List.of();
+
+        List<DailyEntry> registrosHoje = buscarFeedDoDia(user);
+        Set<Long> idsComRegistro = registrosHoje.stream()
+                .map(e -> e.getUser().getId())
+                .collect(Collectors.toSet());
+
+        return userTeam.getMembers().stream()
+                .filter(m -> !idsComRegistro.contains(m.getId()))
+                .collect(Collectors.toList());
     }
 
     private Team getUserTeam(User user) {
