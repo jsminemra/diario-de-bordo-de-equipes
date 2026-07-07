@@ -1,92 +1,154 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Criar Sprint - Diário de Bordo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-</head>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Criar Sprint')}"></head>
 <body>
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h4><i class="fas fa-rocket"></i> Criar Nova Sprint</h4>
-                        <small>Equipe: <span th:text="${team.name}"></span></small>
-                    </div>
-                    <div class="card-body">
-                        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-                        
-                        <form th:action="@{/leader/team/{teamId}/sprint/create(teamId=${team.id})}" 
-                              th:object="${sprintCreateDTO}" 
-                              method="post">
-                            
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nome da Sprint *</label>
-                                <input type="text" class="form-control" id="name" 
-                                       th:field="*{name}" 
-                                       placeholder="Ex: Sprint 1, Sprint 2, ..." required>
-                                <div th:if="${#fields.hasErrors('name')}" class="text-danger" th:errors="*{name}"></div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="startDate" class="form-label">Data de Início *</label>
-                                    <input type="date" class="form-control" id="startDate" 
-                                           th:field="*{startDate}" required>
-                                    <div th:if="${#fields.hasErrors('startDate')}" class="text-danger" th:errors="*{startDate}"></div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="endDate" class="form-label">Data de Fim *</label>
-                                    <input type="date" class="form-control" id="endDate" 
-                                           th:field="*{endDate}" required>
-                                    <div th:if="${#fields.hasErrors('endDate')}" class="text-danger" th:errors="*{endDate}"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> 
-                                A sprint terá duração de <span id="duracao">-</span> dias.
-                            </div>
-                            
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-rocket"></i> Criar Sprint
-                                </button>
-                                <a th:href="@{/leader/team/{id}(id=${team.id})}" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left"></i> Cancelar
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <script>
-        // Calcular duração automaticamente
-        document.addEventListener('DOMContentLoaded', function() {
-            const startDate = document.getElementById('startDate');
-            const endDate = document.getElementById('endDate');
-            const duracao = document.getElementById('duracao');
-            
-            function calcularDuracao() {
-                if (startDate.value && endDate.value) {
-                    const start = new Date(startDate.value);
-                    const end = new Date(endDate.value);
-                    const diffTime = Math.abs(end - start);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    duracao.textContent = diffDays;
-                } else {
-                    duracao.textContent = '-';
-                }
-            }
-            
-            startDate.addEventListener('change', calcularDuracao);
-            endDate.addEventListener('change', calcularDuracao);
-        });
-    </script>
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/leader/team/{id}(id=${team.id})}">Hoje</a>
+      <a class="topnav-link" th:href="@{/leader/team/{id}/history(id=${team.id})}">Histórico</a>
+      <a class="topnav-link" th:href="@{/leader/team/{id}/sprint/report(id=${team.id})}">Relatório</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page" style="max-width:560px;">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;" th:text="${team.name}"></div>
+      <h1 class="h1" style="margin:0;">Nova sprint</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        Defina o nome e o período da próxima sprint.
+      </p>
+    </div>
+    <a th:href="@{/leader/team/{id}(id=${team.id})}" class="btn btn-ghost">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Cancelar
+    </a>
+  </div>
+
+  <!-- ── Error flash ── -->
+  <div th:if="${error}"
+       style="padding:12px 16px;border-radius:8px;background:var(--danger-bg,#fef2f2);color:var(--danger,#dc2626);
+              border:0.5px solid var(--danger,#dc2626);font-size:13px;margin-bottom:20px;"
+       th:text="${error}"></div>
+
+  <!-- ── Form card ── -->
+  <div class="card">
+    <div class="card-body" style="padding:28px;">
+      <form th:action="@{/leader/team/{teamId}/sprint/create(teamId=${team.id})}"
+            th:object="${sprintCreateDTO}"
+            method="post">
+
+        <!-- Nome -->
+        <div style="margin-bottom:20px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text-2);
+                        text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">
+            Nome da sprint
+          </label>
+          <input type="text"
+                 th:field="*{name}"
+                 placeholder="Ex: Sprint 1, Sprint 2..."
+                 style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);
+                        background:var(--surface);color:var(--text);font-size:13.5px;
+                        font-family:var(--sans);outline:none;box-sizing:border-box;"
+                 required>
+          <div th:if="${#fields.hasErrors('name')}"
+               style="margin-top:5px;font-size:12px;color:var(--danger,#dc2626);"
+               th:errors="*{name}"></div>
+        </div>
+
+        <!-- Datas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-2);
+                          text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">
+              Data de início
+            </label>
+            <input type="date"
+                   id="startDate"
+                   th:field="*{startDate}"
+                   style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);
+                          background:var(--surface);color:var(--text);font-size:13.5px;
+                          font-family:var(--mono);outline:none;box-sizing:border-box;"
+                   required>
+            <div th:if="${#fields.hasErrors('startDate')}"
+                 style="margin-top:5px;font-size:12px;color:var(--danger,#dc2626);"
+                 th:errors="*{startDate}"></div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-2);
+                          text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">
+              Data de fim
+            </label>
+            <input type="date"
+                   id="endDate"
+                   th:field="*{endDate}"
+                   style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);
+                          background:var(--surface);color:var(--text);font-size:13.5px;
+                          font-family:var(--mono);outline:none;box-sizing:border-box;"
+                   required>
+            <div th:if="${#fields.hasErrors('endDate')}"
+                 style="margin-top:5px;font-size:12px;color:var(--danger,#dc2626);"
+                 th:errors="*{endDate}"></div>
+          </div>
+        </div>
+
+        <!-- Duração calculada -->
+        <div id="duracaoBox"
+             style="display:none;padding:12px 16px;border-radius:8px;background:var(--surface-2);
+                    border:0.5px solid var(--border);font-size:13px;margin-bottom:24px;">
+          <span style="color:var(--text-3);">Duração:</span>
+          <span id="duracaoDias" class="mono" style="font-weight:600;margin-left:6px;"></span>
+          <span style="color:var(--text-3);"> dias</span>
+        </div>
+
+        <!-- Submit -->
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Criar sprint
+          </button>
+          <a th:href="@{/leader/team/{id}(id=${team.id})}" class="btn btn-ghost">Cancelar</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var start = document.getElementById('startDate');
+    var end   = document.getElementById('endDate');
+    var box   = document.getElementById('duracaoBox');
+    var dias  = document.getElementById('duracaoDias');
+
+    function update() {
+      if (!start.value || !end.value) { box.style.display = 'none'; return; }
+      var diff = Math.round((new Date(end.value) - new Date(start.value)) / 86400000);
+      if (diff <= 0) { box.style.display = 'none'; return; }
+      dias.textContent = diff;
+      box.style.display = 'block';
+    }
+
+    start.addEventListener('change', update);
+    end.addEventListener('change', update);
+    update();
+  })();
+</script>
+
 </body>
 </html>
