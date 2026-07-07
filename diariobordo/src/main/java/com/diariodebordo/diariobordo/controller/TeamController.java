@@ -8,6 +8,7 @@ import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
@@ -23,8 +24,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/leader")
@@ -33,19 +40,22 @@ public class TeamController {
     private final TeamService teamService;
     private final UserRepository userRepository;
     private final DailyEntryService dailyEntryService;
+    private final DailyEntryRepository dailyEntryRepository;
     private final SprintRepository sprintRepository;
     private final SprintService sprintService;
     private final HistoryService historyService;
 
-    public TeamController(TeamService teamService, 
+    public TeamController(TeamService teamService,
                           UserRepository userRepository,
-                          DailyEntryService dailyEntryService, 
+                          DailyEntryService dailyEntryService,
+                          DailyEntryRepository dailyEntryRepository,
                           SprintRepository sprintRepository,
                           SprintService sprintService,
                           HistoryService historyService) {
         this.teamService = teamService;
         this.userRepository = userRepository;
         this.dailyEntryService = dailyEntryService;
+        this.dailyEntryRepository = dailyEntryRepository;
         this.sprintRepository = sprintRepository;
         this.sprintService = sprintService;
         this.historyService = historyService;
@@ -109,13 +119,34 @@ public class TeamController {
                 }
             }
             
+            if (temSprint) {
+                List<DailyEntry> todayEntries = dailyEntryRepository
+                        .findBySprintAndEntryDate(sprintAtiva, LocalDate.now());
+                Map<Long, DailyEntry> entryMap = todayEntries.stream()
+                        .collect(Collectors.toMap(e -> e.getUser().getId(), e -> e, (a, b) -> a));
+                long totalDays = ChronoUnit.DAYS.between(sprintAtiva.getStartDate(), sprintAtiva.getEndDate()) + 1;
+                long elapsed = Math.max(0, ChronoUnit.DAYS.between(sprintAtiva.getStartDate(), LocalDate.now()));
+                long diasRestantes = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), sprintAtiva.getEndDate()));
+                int progressoPct = totalDays > 0 ? (int) Math.min(100, Math.round(elapsed * 100.0 / totalDays)) : 0;
+                long impedimentosHoje = todayEntries.stream()
+                        .filter(e -> e.getImpediments() != null && !e.getImpediments().isBlank())
+                        .count();
+                model.addAttribute("entryMap", entryMap);
+                model.addAttribute("totalDays", totalDays);
+                model.addAttribute("elapsed", elapsed);
+                model.addAttribute("diasRestantes", diasRestantes);
+                model.addAttribute("progressoPct", progressoPct);
+                model.addAttribute("registrosHoje", todayEntries.size());
+                model.addAttribute("impedimentosHoje", impedimentosHoje);
+            }
+
             model.addAttribute("team", team);
             model.addAttribute("sprintAtiva", sprintAtiva);
             model.addAttribute("addMemberDTO", new AddMemberDTO());
             model.addAttribute("dailyEntryDTO", entryDTO);
             model.addAttribute("jaRegistrou", jaRegistrou);
             model.addAttribute("temSprint", temSprint);
-            
+
             return "team/team-detail";
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -270,11 +301,25 @@ public class TeamController {
             Sprint sprint = sprintRepository.findByTeamAndStatus(team, Sprint.Status.ATIVA).orElse(null);
 
             List<Sprint> allSprints = sprintRepository.findByTeam(team);
+            allSprints.sort(Comparator.comparing(Sprint::getStartDate).reversed());
+
+            Map<Long, List<DailyEntry>> entriesBySprintId = new LinkedHashMap<>();
+            for (Sprint s : allSprints) {
+                entriesBySprintId.put(s.getId(), new ArrayList<>());
+            }
+            for (DailyEntry entry : history) {
+                Sprint s = entry.getSprint();
+                if (s != null && entriesBySprintId.containsKey(s.getId())) {
+                    entriesBySprintId.get(s.getId()).add(entry);
+                }
+            }
 
             model.addAttribute("team", team);
             model.addAttribute("history", history);
             model.addAttribute("sprint", sprint);
             model.addAttribute("allSprints", allSprints);
+            model.addAttribute("entriesBySprintId", entriesBySprintId);
+            model.addAttribute("totalEntries", history.size());
             model.addAttribute("startDate", start);
             model.addAttribute("endDate", end);
 
@@ -283,6 +328,116 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/leader/team/" + teamId;
         }
+    }
+
+    @GetMapping("/team/{teamId}/sprint/report")
+    public String viewSprintReport(@PathVariable Long teamId,
+                                   Authentication auth,
+                                   Model model,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            Team team = teamService.getTeamWithMembers(teamId);
+
+            if (!team.getLeader().getId().equals(leader.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
+            Sprint sprint = sprintService.getActiveSprint(teamId);
+            if (sprint == null) {
+                sprint = sprintRepository.findByTeam(team).stream()
+                        .max(Comparator.comparing(Sprint::getStartDate))
+                        .orElse(null);
+            }
+
+            List<DailyEntry> entries = sprint != null
+                    ? dailyEntryRepository.findBySprint(sprint)
+                    : List.of();
+
+            Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                    .collect(Collectors.groupingBy(e -> e.getUser().getId()));
+
+            long totalDays = sprint != null
+                    ? ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1
+                    : 0;
+
+            model.addAttribute("team", team);
+            model.addAttribute("sprint", sprint);
+            model.addAttribute("entries", entries);
+            model.addAttribute("entriesByMember", entriesByMember);
+            model.addAttribute("totalDays", totalDays);
+            model.addAttribute("backUrl", "/leader/team/" + teamId);
+
+            return "report";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/leader/team/" + teamId;
+        }
+    }
+
+    @GetMapping("/team/{teamId}/sprint/{sprintId}/report")
+    public String viewSprintReportById(@PathVariable Long teamId,
+                                       @PathVariable Long sprintId,
+                                       Authentication auth,
+                                       Model model,
+                                       RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            Team team = teamService.getTeamWithMembers(teamId);
+
+            if (!team.getLeader().getId().equals(leader.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
+            Sprint sprint = sprintRepository.findById(sprintId)
+                    .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+
+            List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
+
+            Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                    .collect(Collectors.groupingBy(e -> e.getUser().getId()));
+
+            long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+
+            model.addAttribute("team", team);
+            model.addAttribute("sprint", sprint);
+            model.addAttribute("entries", entries);
+            model.addAttribute("entriesByMember", entriesByMember);
+            model.addAttribute("totalDays", totalDays);
+            model.addAttribute("backUrl", "/leader/team/" + teamId + "/history");
+
+            return "report";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/leader/team/" + teamId;
+        }
+    }
+
+    @PostMapping("/team/{teamId}/sprint/close")
+    public String closeSprint(@PathVariable Long teamId,
+                              Authentication auth,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            Team team = teamService.getTeamWithMembers(teamId);
+            if (!team.getLeader().getId().equals(leader.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para encerrar esta sprint");
+                return "redirect:/leader/team/" + teamId;
+            }
+            Sprint sprint = sprintService.getActiveSprint(teamId);
+            if (sprint != null) {
+                sprint.setStatus(Sprint.Status.ENCERRADA);
+                sprintRepository.save(sprint);
+                redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada com sucesso!");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
+            }
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/leader/team/" + teamId;
     }
 
     private User getAuthenticatedUser(Authentication auth) {
