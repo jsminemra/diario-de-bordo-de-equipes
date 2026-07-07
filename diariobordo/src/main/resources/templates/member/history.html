@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Histórico')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/member/feed}">Hoje</a>
+      <a class="topnav-link" th:href="@{/member/heatmap}">Perfil</a>
+      <a class="topnav-link active" th:href="@{/member/history}">Histórico</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <div style="display:flex;align-items:center;gap:10px;padding-left:8px;border-left:0.5px solid var(--border);">
+      <div style="text-align:right;">
+        <div style="font-size:12.5px;font-weight:600;line-height:1.2;" th:text="${usuario != null ? usuario.name : ''}"></div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.2;" th:text="${usuario != null ? usuario.role.name() : ''}"></div>
+      </div>
+      <div class="avatar avatar-md"
+           th:style="'background:hsl(' + ${usuario != null ? (usuario.name.hashCode() % 360 + 360) % 360 : 200} + ',55%,38%)'"
+           th:text="${usuario != null and usuario.name.length() >= 2 ? usuario.name.substring(0,2).toUpperCase() : '?'}">??</div>
+    </div>
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Meu histórico</div>
+      <h1 class="h1" style="margin:0;" th:text="${usuario != null ? usuario.name : 'Histórico'}"></h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        <span class="mono" th:text="${totalEntries}">0</span> registros
+        <span th:if="${!allSprints.isEmpty()}">
+          · <span class="mono" th:text="${allSprints.size()}">0</span> sprints
+        </span>
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a th:href="@{/member/heatmap}" class="btn btn-ghost">Voltar ao perfil</a>
+    </div>
+  </div>
+
+  <!-- ── Empty state ── -->
+  <div th:if="${totalEntries == 0}"
+       class="card" style="text-align:center;padding:60px 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">📋</div>
+    <h2 class="h2" style="margin:0 0 10px;">Nenhum registro encontrado</h2>
+    <p class="muted">Seus registros diários aparecerão aqui agrupados por sprint.</p>
+    <a th:href="@{/member/feed}" class="btn btn-ghost" style="display:inline-flex;margin-top:20px;">
+      Ir para o feed
+    </a>
+  </div>
+
+  <!-- ── Sprint groups ── -->
+  <div th:unless="${totalEntries == 0}">
+    <div th:each="sprint : ${allSprints}"
+         th:with="sprintEntries=${entriesBySprintId.get(sprint.id)}"
+         th:if="${sprintEntries != null and !sprintEntries.isEmpty()}"
+         style="margin-bottom:24px;">
+
+      <div class="card">
+        <!-- Sprint group header -->
+        <div class="card-header">
+          <div>
+            <div class="card-title" th:text="${sprint.name}"></div>
+            <div class="card-subtitle">
+              <span class="mono" th:text="${#temporals.format(sprint.startDate,'dd/MM/yyyy')}"></span>
+              →
+              <span class="mono" th:text="${#temporals.format(sprint.endDate,'dd/MM/yyyy')}"></span>
+              ·
+              <span class="mono" th:text="${sprintEntries.size()}"></span>
+              <span th:if="${sprintEntries.size() == 1}"> registro</span>
+              <span th:unless="${sprintEntries.size() == 1}"> registros</span>
+            </div>
+          </div>
+          <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
+            <span class="dot"></span>Ativa
+          </span>
+          <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
+            Encerrada
+          </span>
+        </div>
+
+        <!-- Entries -->
+        <div class="card-body">
+          <div th:each="entry : ${sprintEntries}" class="timeline-item">
+            <div class="timeline-date">
+              <span th:text="${#temporals.format(entry.entryDate, 'dd/MM/yyyy')}"></span>
+              <span class="weekday" th:text="${#temporals.format(entry.entryDate, 'EEE')}"></span>
+            </div>
+            <div class="timeline-body">
+              <div class="feed-cell">
+                <span class="label">O que fiz</span>
+                <p th:text="${entry.whatWasDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">O que farei</span>
+                <p th:text="${entry.whatWillBeDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">Impedimentos</span>
+                <p th:text="${(entry.impediments != null and !entry.impediments.isEmpty()) ? entry.impediments : 'Nenhum.'}"
+                   th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

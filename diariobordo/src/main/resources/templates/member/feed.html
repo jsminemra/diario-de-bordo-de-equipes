@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Feed')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <div class="topnav-team" th:if="${sprintAtiva != null}"
+         th:text="${sprintAtiva.team != null ? sprintAtiva.team.name : 'Equipe'}"></div>
+    <nav class="topnav-links">
+      <a class="topnav-link active" th:href="@{/member/feed}">Hoje</a>
+      <a class="topnav-link" th:href="@{/member/heatmap}">Perfil</a>
+      <a class="topnav-link" th:href="@{/member/history}">Histórico</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <div style="display:flex;align-items:center;gap:10px;padding-left:8px;border-left:0.5px solid var(--border);">
+      <div style="text-align:right;">
+        <div style="font-size:12.5px;font-weight:600;line-height:1.2;" th:text="${usuario != null ? usuario.name : ''}"></div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.2;"
+             th:text="${usuario != null ? usuario.role.name() : ''}"></div>
+      </div>
+      <div class="avatar avatar-md"
+           th:style="'background:hsl(' + ${usuario != null ? (usuario.name.hashCode() % 360 + 360) % 360 : 200} + ',55%,38%)'"
+           th:text="${usuario != null and usuario.name.length() >= 2 ? usuario.name.substring(0,2).toUpperCase() : '?'}">??</div>
+    </div>
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<!-- ── Page body ── -->
+<div class="page">
+
+  <!-- sem sprint ativa -->
+  <div th:if="${!temSprint}" style="text-align:center;padding:80px 20px;">
+    <div style="font-size:56px;margin-bottom:20px;">📅</div>
+    <h2 class="h2" style="margin:0 0 12px;">Nenhuma sprint ativa</h2>
+    <p class="muted" th:text="${mensagem}"></p>
+    <a href="/logout" class="btn btn-ghost" style="margin-top:20px;">Sair</a>
+  </div>
+
+  <!-- conteúdo principal -->
+  <div th:if="${temSprint}">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="label" style="margin-bottom:6px;">Hoje</div>
+        <h1 class="h1" style="margin:0;"
+            th:text="${#temporals.format(#temporals.createToday(), 'EEEE, dd')}
+                      + ' de '
+                      + ${#temporals.format(#temporals.createToday(), 'MMMM')}
+                      + ' de '
+                      + ${#temporals.format(#temporals.createToday(), 'yyyy')}"></h1>
+        <p class="muted" style="margin:6px 0 0;font-size:13.5px;" th:if="${sprintAtiva != null}">
+          <span th:text="${sprintAtiva.name}"></span>
+          &nbsp;·&nbsp;
+          <span class="mono" style="color:var(--text);">
+            <span th:text="${diasRestantes}"></span> dias restantes
+          </span>
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="badge badge-primary"><span class="dot"></span>Sprint ativa</span>
+        <a th:if="${sprintAtiva != null and usuario != null and usuario.role.name() == 'LEADER'}"
+           th:href="@{/leader/team/{id}(id=${sprintAtiva.team.id})}"
+           class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Ver sprint
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Card de registro do usuário logado ── -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Seu registro de hoje</div>
+          <div class="card-subtitle">Preencha os três campos. Você pode editar até o fim do dia.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span th:if="${jaRegistrou}" class="badge badge-success">
+            <span class="dot"></span>Salvo
+          </span>
+          <span th:unless="${jaRegistrou}" class="badge badge-warn">
+            <span class="dot"></span>Aguardando registro
+          </span>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="post" th:action="@{/member/entry/create}">
+          <div class="field-row">
+            <div class="input-group">
+              <label class="input-label">O que fiz hoje</label>
+              <textarea class="textarea" name="whatWasDone" rows="4"
+                        placeholder="Ex.: Implementei a tela X e cobri com testes…"
+                        th:text="${entryHoje != null ? entryHoje.whatWasDone : ''}"></textarea>
+            </div>
+            <div class="input-group">
+              <label class="input-label">O que farei amanhã</label>
+              <textarea class="textarea" name="whatWillBeDone" rows="4"
+                        placeholder="Ex.: Refatorar o módulo Y e abrir PR…"
+                        th:text="${entryHoje != null ? entryHoje.whatWillBeDone : ''}"></textarea>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Impedimentos</label>
+              <textarea class="textarea" name="impediments" rows="4"
+                        placeholder="Algo te bloqueando? Descreva aqui."
+                        th:text="${entryHoje != null ? entryHoje.impediments : ''}"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:0.5px solid var(--border);">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span th:if="${jaRegistrou}">Atualizar registro</span>
+              <span th:unless="${jaRegistrou}">Salvar registro</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Feed section header ── -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:32px 0 14px;">
+      <div>
+        <h2 class="h2" style="margin:0;">Hoje na equipe</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:13px;">
+          <span th:text="${registros.size()}"></span> de
+          <span th:text="${registros.size() + membrosAusentes.size()}"></span>
+          membros já registraram.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Feed card ── -->
+    <div id="section-feed-registros" class="card" style="padding:0;">
+
+      <!-- membros que registraram -->
+      <div th:each="entry : ${registros}" class="feed-item">
+        <div class="feed-author">
+          <div class="avatar avatar-lg"
+               th:style="'background:hsl(' + ${(entry.user.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+               th:text="${entry.user.name.length() >= 2 ? entry.user.name.substring(0,2).toUpperCase() : entry.user.name.toUpperCase()}">MA</div>
+          <div>
+            <div class="feed-author-name" th:text="${entry.user.name}"></div>
+            <div class="feed-author-time mono"
+                 th:text="'enviado às ' + ${entry.createdAt != null ? #temporals.format(entry.createdAt, 'HH:mm') : '--:--'}"></div>
+            <div style="margin-top:6px;">
+              <span class="badge badge-neutral">
+                <span class="dot"></span>
+                <span th:text="${entry.user.role.name()}">Membro</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="feed-body">
+          <div class="feed-cell">
+            <span class="label">O que fiz</span>
+            <p th:text="${entry.whatWasDone}"></p>
+          </div>
+          <div class="feed-cell">
+            <span class="label">O que farei</span>
+            <p th:text="${entry.whatWillBeDone}"></p>
+          </div>
+          <div class="feed-cell">
+            <span class="label">Impedimentos</span>
+            <p th:text="${(entry.impediments != null and !entry.impediments.isEmpty()) ? entry.impediments : 'Nenhum.'}"
+               th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- membros ausentes -->
+      <div id="section-membros-ausentes">
+        <div th:each="membro : ${membrosAusentes}"
+             class="feed-item" style="background:rgba(254,226,226,0.25);">
+          <div class="feed-author">
+            <div class="avatar avatar-lg"
+                 th:style="'background:hsl(' + ${(membro.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+                 th:text="${membro.name.length() >= 2 ? membro.name.substring(0,2).toUpperCase() : membro.name.toUpperCase()}">??</div>
+            <div>
+              <div class="feed-author-name" th:text="${membro.name}"></div>
+              <div class="feed-author-time">aguardando registro</div>
+              <div style="margin-top:6px;">
+                <span class="badge badge-danger"><span class="dot"></span>Sem registro hoje</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;color:var(--text-2);font-size:13px;font-style:italic;">
+            <span th:text="${membro.name}"></span>&nbsp;ainda não enviou o registro hoje.
+          </div>
+        </div>
+      </div>
+
+      <!-- estado vazio -->
+      <div th:if="${registros.isEmpty() and membrosAusentes.isEmpty()}"
+           style="padding:40px;text-align:center;color:var(--text-3);">
+        Nenhum registro encontrado para hoje. Seja o primeiro a registrar!
+      </div>
+    </div>
+
+  </div><!-- /temSprint -->
+</div>
+
+<script>
+  /* auto-refresh do feed a cada 30 s */
+  function refreshFeed() {
+    fetch(window.location.href, { credentials: 'same-origin' })
+      .then(function (r) { if (r.redirected) return; return r.text(); })
+      .then(function (html) {
+        if (!html) return;
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var nf = doc.getElementById('section-feed-registros');
+        if (nf) document.getElementById('section-feed-registros').innerHTML = nf.innerHTML;
+      })
+      .catch(function () {});
+  }
+  setInterval(refreshFeed, 30000);
+</script>
+
+</body>
+</html>

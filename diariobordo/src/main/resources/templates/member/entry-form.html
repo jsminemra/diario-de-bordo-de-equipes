@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro Diário - Diário de Bordo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+
+                <nav aria-label="breadcrumb" class="mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/member/feed"><i class="fas fa-arrow-left"></i> Voltar ao Feed</a></li>
+                        <li class="breadcrumb-item active">Registro Diário</li>
+                    </ol>
+                </nav>
+
+                <div class="card">
+                    <div class="card-header text-white" th:classappend="${jaRegistrou} ? 'bg-warning text-dark' : 'bg-success'">
+                        <h5 class="mb-0">
+                            <i class="fas fa-edit"></i>
+                            <span th:if="${jaRegistrou}">Editar Registro de Hoje</span>
+                            <span th:unless="${jaRegistrou}">Novo Registro Diário</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+
+                        <div th:if="${jaRegistrou}" class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Você já possui um registro para hoje. Edite os campos abaixo para atualizá-lo.
+                        </div>
+
+                        <div th:if="${erro}" class="alert alert-danger" th:text="${erro}"></div>
+
+                        <form method="post" th:action="@{/member/entry/create}">
+                            <div class="mb-3">
+                                <label for="whatWasDone" class="form-label fw-semibold">
+                                    <i class="fas fa-check-circle text-success"></i> O que você fez hoje? <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="whatWasDone" name="whatWasDone" rows="3"
+                                          placeholder="Descreva o que você realizou hoje..."
+                                          required
+                                          th:text="${dailyEntryDTO != null ? dailyEntryDTO.whatWasDone : ''}"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="whatWillBeDone" class="form-label fw-semibold">
+                                    <i class="fas fa-arrow-right text-primary"></i> O que você fará amanhã? <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="whatWillBeDone" name="whatWillBeDone" rows="3"
+                                          placeholder="Descreva seus próximos passos..."
+                                          required
+                                          th:text="${dailyEntryDTO != null ? dailyEntryDTO.whatWillBeDone : ''}"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="impediments" class="form-label fw-semibold">
+                                    <i class="fas fa-exclamation-triangle text-warning"></i> Impedimentos
+                                </label>
+                                <textarea class="form-control" id="impediments" name="impediments" rows="2"
+                                          placeholder="Algo está bloqueando seu trabalho? (opcional)"
+                                          th:text="${dailyEntryDTO != null ? dailyEntryDTO.impediments : ''}"></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i>
+                                    <span th:if="${jaRegistrou}">Atualizar Registro</span>
+                                    <span th:unless="${jaRegistrou}">Salvar Registro</span>
+                                </button>
+                                <a href="/member/feed" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

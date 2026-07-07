@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Sprint')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <div class="topnav-team" th:text="${team.name}"></div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/member/feed}">Hoje</a>
+      <a class="topnav-link active" th:href="@{/leader/team/{id}(id=${team.id})}">Sprints</a>
+      <a class="topnav-link" th:href="@{/leader/team/{id}/history(id=${team.id})}">Histórico</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <div style="display:flex;align-items:center;gap:10px;padding-left:8px;border-left:0.5px solid var(--border);">
+      <div style="text-align:right;">
+        <div style="font-size:12.5px;font-weight:600;line-height:1.2;" th:text="${team.leader.name}"></div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.2;">Líder</div>
+      </div>
+      <div class="avatar avatar-md"
+           th:style="'background:hsl(' + ${(team.leader.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+           th:text="${team.leader.name.length() >= 2 ? team.leader.name.substring(0,2).toUpperCase() : team.leader.name.toUpperCase()}">LI</div>
+    </div>
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- flash messages -->
+  <div th:if="${success}"
+       style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 16px;font-size:13px;margin-bottom:20px;border:0.5px solid rgba(21,128,61,0.15);"
+       th:text="${success}"></div>
+  <div th:if="${error}"
+       style="background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 16px;font-size:13px;margin-bottom:20px;border:0.5px solid rgba(185,28,28,0.2);"
+       th:text="${error}"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SEM SPRINT ATIVA — empty state
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div th:if="${!temSprint}" style="text-align:center;padding:80px 20px;">
+    <div style="font-size:48px;margin-bottom:20px;">🏁</div>
+    <h2 class="h2" style="margin:0 0 10px;">Nenhuma sprint ativa</h2>
+    <p class="muted" style="margin:0 0 28px;font-size:13.5px;">
+      Crie uma nova sprint para começar a acompanhar o progresso da equipe.
+    </p>
+    <button id="btn-nova-sprint" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Nova Sprint
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       COM SPRINT ATIVA
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div th:if="${temSprint}">
+
+    <!-- ── Page header ── -->
+    <div class="page-header" style="margin-bottom:24px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <h1 class="h1" style="margin:0;" th:text="${sprintAtiva.name}"></h1>
+          <span class="badge badge-primary"><span class="dot"></span>Sprint Ativa</span>
+        </div>
+        <p class="muted" style="margin:0;font-size:13.5px;">
+          <span th:text="${#temporals.format(sprintAtiva.startDate, 'dd MMM')}"></span>
+          &nbsp;→&nbsp;
+          <span th:text="${#temporals.format(sprintAtiva.endDate, 'dd MMM yyyy')}"></span>
+          &nbsp;·&nbsp;
+          <span class="mono">Dia <span th:text="${elapsed}"></span> de <span th:text="${totalDays}"></span></span>
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="btn-nova-sprint" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nova Sprint
+        </button>
+        <button id="btn-encerrar-sprint" class="btn btn-ghost btn-sm"
+                style="color:var(--danger);border-color:rgba(185,28,28,0.3);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          Encerrar Sprint
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Progress + KPI strip ── -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="label">Progresso da sprint</span>
+          <span class="mono" style="font-size:12px;" th:text="${progressoPct} + '%'"></span>
+        </div>
+        <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden;margin-bottom:20px;">
+          <div class="progress-bar"
+               th:style="'width:' + ${progressoPct} + '%;background:var(--primary);height:100%;border-radius:99px;transition:width 0.3s;'"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+          <div class="kpi-card" style="background:var(--surface-2,var(--surface));border-radius:10px;padding:14px 16px;">
+            <div class="label" style="margin-bottom:6px;">Registros hoje</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;">
+              <span class="mono" th:text="${registrosHoje}"></span>
+              <span style="font-size:13px;font-weight:400;color:var(--text-3);">
+                / <span th:text="${team.members.size()}"></span>
+              </span>
+            </div>
+          </div>
+          <div class="kpi-card" style="background:var(--surface-2,var(--surface));border-radius:10px;padding:14px 16px;">
+            <div class="label" style="margin-bottom:6px;">Com impedimentos</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;">
+              <span class="mono" th:text="${impedimentosHoje}"></span>
+            </div>
+          </div>
+          <div class="kpi-card" style="background:var(--surface-2,var(--surface));border-radius:10px;padding:14px 16px;">
+            <div class="label" style="margin-bottom:6px;">Dias restantes</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;">
+              <span class="mono" th:text="${diasRestantes}"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Member table ── -->
+    <div class="card" style="padding:0;margin-bottom:24px;">
+      <div class="card-header" style="padding:18px 22px 16px;">
+        <div>
+          <div class="card-title">Membros da equipe</div>
+          <div class="card-subtitle">Status de registro para hoje.</div>
+        </div>
+        <span class="badge badge-neutral">
+          <span th:text="${team.members.size()}"></span> membros
+        </span>
+      </div>
+
+      <div th:each="member : ${team.members}" class="member-row">
+        <!-- child 1: avatar (32px col) -->
+        <div class="avatar avatar-md"
+             th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+             th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+        <!-- child 2: name + email (1fr col) -->
+        <div>
+          <div class="member-name" th:text="${member.name}"></div>
+          <div class="member-role" th:text="${member.email}"></div>
+        </div>
+        <!-- child 3: role badge (200px col) -->
+        <div>
+          <span th:if="${member.id == team.leader.id}" class="badge badge-primary">
+            <span class="dot"></span>Líder
+          </span>
+          <span th:unless="${member.id == team.leader.id}" class="badge badge-neutral">
+            <span class="dot"></span>Membro
+          </span>
+        </div>
+        <!-- child 4: today status (140px col) -->
+        <div>
+          <th:block th:with="todayEntry=${entryMap != null ? entryMap.get(member.id) : null}">
+            <span th:if="${todayEntry != null}" class="badge badge-success">
+              <span class="dot"></span>Registrou
+            </span>
+            <span th:unless="${todayEntry != null}" class="badge badge-danger">
+              <span class="dot"></span>Pendente
+            </span>
+          </th:block>
+        </div>
+        <!-- child 5: actions (120px col) -->
+        <div style="display:flex;gap:6px;justify-content:flex-end;">
+          <a class="btn btn-ghost btn-sm" th:href="@{/leader/heatmap}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Heatmap
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Líder: registro diário ── -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Seu registro de hoje</div>
+          <div class="card-subtitle">Como líder, registre seu progresso diário.</div>
+        </div>
+        <span th:if="${jaRegistrou}" class="badge badge-success"><span class="dot"></span>Salvo</span>
+        <span th:unless="${jaRegistrou}" class="badge badge-warn"><span class="dot"></span>Aguardando</span>
+      </div>
+      <div class="card-body">
+        <form th:action="@{/leader/team/{id}/entry(id=${team.id})}" th:object="${dailyEntryDTO}" method="post">
+          <div class="field-row">
+            <div class="input-group">
+              <label class="input-label">O que fiz hoje</label>
+              <textarea class="textarea" name="whatWasDone" rows="4"
+                        placeholder="Ex.: Implementei a tela X e revisei PRs…"
+                        th:field="*{whatWasDone}"></textarea>
+            </div>
+            <div class="input-group">
+              <label class="input-label">O que farei amanhã</label>
+              <textarea class="textarea" name="whatWillBeDone" rows="4"
+                        placeholder="Ex.: Reunião de planejamento e merge do PR…"
+                        th:field="*{whatWillBeDone}"></textarea>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Impedimentos</label>
+              <textarea class="textarea" name="impediments" rows="4"
+                        placeholder="Algo bloqueando o time?"
+                        th:field="*{impediments}"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:0.5px solid var(--border);">
+            <button type="submit" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span th:if="${jaRegistrou}">Atualizar registro</span>
+              <span th:unless="${jaRegistrou}">Salvar registro</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /temSprint -->
+
+  <!-- ── Adicionar membro ── -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Adicionar membro</div>
+        <div class="card-subtitle">Insira o e-mail de um usuário já cadastrado.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/leader/team/{id}/add-member(id=${team.id})}" th:object="${addMemberDTO}" method="post"
+            style="display:flex;gap:10px;align-items:flex-end;">
+        <div class="input-group" style="flex:1;margin:0;">
+          <label class="input-label">E-mail do membro</label>
+          <input class="input" type="email" name="email" th:field="*{email}"
+                 placeholder="usuario@academico.edu" required>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Adicionar
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ════════════════════════════════════════════════════════════════════
+     MODAL: Encerrar Sprint
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="modal-encerrar" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">Encerrar sprint</div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:rgba(185,28,28,0.06);border:0.5px solid rgba(185,28,28,0.2);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--danger);">
+          Esta ação é irreversível. Os registros serão preservados, mas nenhum novo registro poderá ser feito nesta sprint.
+        </div>
+        <p style="margin:0;font-size:13.5px;color:var(--text-2);">
+          Tem certeza que deseja encerrar
+          <strong th:text="${sprintAtiva != null ? sprintAtiva.name : 'a sprint atual'}"></strong>?
+        </p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-cancelar-encerrar" type="button" class="btn btn-ghost">Cancelar</button>
+      <form th:if="${sprintAtiva != null}"
+            th:action="@{/leader/team/{id}/sprint/close(id=${team.id})}" method="post"
+            style="display:inline;">
+        <button type="submit" class="btn btn-danger">Encerrar sprint</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     MODAL: Nova Sprint — 4-step stepper
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="modal-nova-sprint" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="max-width:520px;width:100%;">
+    <div class="modal-header">
+      <div class="modal-title">Nova sprint</div>
+      <button id="btn-cancelar-sprint" type="button"
+              style="background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- stepper indicator -->
+    <div style="padding:0 28px 20px;display:flex;align-items:center;gap:0;">
+      <div id="step-dot-1" class="step-dot is-active is-current"
+           style="width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0;"></div>
+      <div id="step-line-1" class="step-line"
+           style="flex:1;height:2px;background:var(--border);margin:0 4px;transition:background 0.2s;"></div>
+      <div id="step-dot-2" class="step-dot"
+           style="width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>
+      <div id="step-line-2" class="step-line"
+           style="flex:1;height:2px;background:var(--border);margin:0 4px;transition:background 0.2s;"></div>
+      <div id="step-dot-3" class="step-dot"
+           style="width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>
+      <div id="step-line-3" class="step-line"
+           style="flex:1;height:2px;background:var(--border);margin:0 4px;transition:background 0.2s;"></div>
+      <div id="step-dot-4" class="step-dot"
+           style="width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>
+    </div>
+
+    <form th:action="@{/leader/team/{id}/sprint/create(id=${team.id})}" method="post">
+
+      <!-- Step 1: Nome -->
+      <div id="sprint-step-1" class="modal-body">
+        <div class="input-group" style="margin-bottom:0;">
+          <label class="input-label">Nome da sprint</label>
+          <input id="sprint-name" class="input" type="text" name="name"
+                 placeholder="Ex.: Sprint 3 — MVP" required autofocus>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:5px;">
+            Use um nome curto e descritivo para identificar esta sprint.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Datas -->
+      <div id="sprint-step-2" class="modal-body" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div class="input-group" style="margin:0;">
+            <label class="input-label">Data de início</label>
+            <input id="sprint-start" class="input" type="date" name="startDate" required>
+          </div>
+          <div class="input-group" style="margin:0;">
+            <label class="input-label">Data de fim</label>
+            <input id="sprint-end" class="input" type="date" name="endDate" required>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span class="label">Predefinições:</span>
+          <button type="button" data-sprint-preset="7" class="btn btn-ghost btn-sm">7 dias</button>
+          <button type="button" data-sprint-preset="14" class="btn btn-ghost btn-sm">14 dias</button>
+          <button type="button" data-sprint-preset="21" class="btn btn-ghost btn-sm">21 dias</button>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border);font-size:13px;color:var(--text-2);">
+          Duração: <span id="sprint-duration" class="mono" style="font-weight:600;">—</span>
+        </div>
+      </div>
+
+      <!-- Step 3: Membros -->
+      <div id="sprint-step-3" class="modal-body" style="display:none;">
+        <div class="card-subtitle" style="margin-bottom:14px;">
+          Os seguintes membros participarão desta sprint:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div th:each="member : ${team.members}"
+               style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--surface);">
+            <div class="avatar avatar-md"
+                 th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+                 th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;" th:text="${member.name}"></div>
+              <div style="font-size:11.5px;color:var(--text-3);" th:text="${member.email}"></div>
+            </div>
+            <span th:if="${member.id == team.leader.id}" class="badge badge-primary" style="margin-left:auto;">
+              <span class="dot"></span>Líder
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Revisão -->
+      <div id="sprint-step-4" class="modal-body" style="display:none;">
+        <div class="card-subtitle" style="margin-bottom:16px;">
+          Confirme os dados antes de criar a sprint.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:8px;font-size:13px;">
+            <span class="label">Nome</span>
+            <span id="review-sprint-name" style="font-weight:600;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:8px;font-size:13px;">
+            <span class="label">Início</span>
+            <span id="review-start" class="mono">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:8px;font-size:13px;">
+            <span class="label">Fim</span>
+            <span id="review-end" class="mono">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:8px;font-size:13px;">
+            <span class="label">Duração</span>
+            <span id="review-duration" class="mono">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:8px;font-size:13px;">
+            <span class="label">Membros</span>
+            <span class="mono" th:text="${team.members.size()}">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- navigation footer -->
+      <div class="modal-footer">
+        <button id="btn-sprint-voltar" type="button" class="btn btn-ghost" style="display:none;">Voltar</button>
+        <div style="flex:1;"></div>
+        <button id="btn-sprint-proximo" type="button" class="btn btn-primary">Próximo</button>
+        <button id="btn-sprint-criar" type="submit" class="btn btn-primary" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Criar sprint
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/modals.js}"></script>
+</body>
+</html>

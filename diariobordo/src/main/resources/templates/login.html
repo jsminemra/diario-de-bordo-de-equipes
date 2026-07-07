@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Login')}"></head>
+<body>
+
+<div class="login-screen">
+  <div class="login-card">
+
+    <div class="login-brand">
+      <div class="mark">D</div>
+      <div>
+        <div class="name">Diário de Bordo</div>
+        <div class="name-sub">Sistema de stand-up assíncrono</div>
+      </div>
+    </div>
+
+    <h1 class="login-title">Bem-vinda de volta.</h1>
+    <p class="login-tagline">Registre. Acompanhe. Evolua.</p>
+
+    <!-- mensagens de estado -->
+    <div th:if="${param.error}"
+         style="background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;border:0.5px solid rgba(185,28,28,0.2);">
+      E-mail ou senha inválidos. Tente novamente.
+    </div>
+    <div th:if="${param.logout}"
+         style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;">
+      Você saiu com sucesso.
+    </div>
+    <div th:if="${success}"
+         style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;"
+         th:text="${success}"></div>
+
+    <form th:action="@{/login}" method="post" class="login-form">
+      <div class="input-group">
+        <label class="input-label" for="username">E-mail acadêmico</label>
+        <input class="input" type="email" id="username" name="username"
+               placeholder="seu.nome@academico.edu" required autofocus>
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="password">Senha</label>
+        <input class="input" type="password" id="password" name="password"
+               placeholder="Digite sua senha" required>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);cursor:pointer;">
+          <input type="checkbox" name="remember-me" style="accent-color:var(--primary);">
+          Manter conectada
+        </label>
+        <a href="#" style="font-size:12.5px;color:var(--primary);text-decoration:none;font-weight:500;">
+          Esqueci a senha
+        </a>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+    </form>
+
+    <div class="login-footer">
+      Primeiro acesso? <a href="/register">Solicite seu cadastro à professora</a>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Histórico da Equipe')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/professor/panel}">Painel</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Histórico da equipe</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <h1 class="h1" style="margin:0;" th:text="${team.name}"></h1>
+        <div class="team-members-stack">
+          <div th:each="member, mStat : ${team.members}"
+               th:if="${mStat.index < 5}"
+               class="avatar avatar-sm"
+               th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+               th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+          <div th:if="${team.members.size() > 5}"
+               class="avatar avatar-sm"
+               style="background:var(--surface-2);color:var(--text-2);font-size:10px;">
+            +<span th:text="${team.members.size() - 5}"></span>
+          </div>
+        </div>
+      </div>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        <span class="mono" th:text="${allSprints.size()}">0</span> sprints registradas
+        · <span class="mono" th:text="${team.members.size()}">0</span> membros
+        · Líder: <span th:text="${team.leader.name}"></span>
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a th:href="@{/professor/panel}" class="btn btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Voltar ao painel
+      </a>
+    </div>
+  </div>
+
+  <!-- ── KPI strip ── -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Sprints encerradas</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${encerradas}">0</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span class="badge badge-neutral">de <span th:text="${allSprints.size()}"></span> total</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Registros totais</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${totalRegistros}">0</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span class="badge badge-neutral">desde o início</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Adesão média</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${mediaAdesao} + '%'">0%</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span th:if="${mediaAdesao >= 80}" class="badge badge-success">Boa adesão</span>
+        <span th:if="${mediaAdesao >= 50 and mediaAdesao < 80}" class="badge badge-warn">Adesão parcial</span>
+        <span th:if="${mediaAdesao < 50}" class="badge badge-danger">Adesão baixa</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Membros</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${team.members.size()}">0</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span class="badge badge-neutral">
+          <span th:text="${registradosHoje}">0</span> registraram hoje
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Sprint list ── -->
+  <div class="card" style="padding:0;margin-bottom:24px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Sprints</div>
+        <div class="card-subtitle">Histórico completo — veja o relatório de cada sprint.</div>
+      </div>
+    </div>
+
+    <div th:if="${allSprints.isEmpty()}"
+         style="padding:40px;text-align:center;color:var(--text-3);font-size:13px;">
+      Nenhuma sprint cadastrada para esta equipe.
+    </div>
+
+    <!-- Header row -->
+    <div th:unless="${allSprints.isEmpty()}"
+         style="display:grid;grid-template-columns:1fr 160px 80px 150px 170px;
+                gap:16px;align-items:center;padding:10px 22px;
+                background:var(--surface-2);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);
+                font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;">
+      <div>Sprint</div>
+      <div>Status</div>
+      <div>Registros</div>
+      <div>Adesão</div>
+      <div></div>
+    </div>
+
+    <!-- Sprint rows -->
+    <div th:each="sprint, iterStat : ${allSprints}"
+         th:with="count=${sprintEntryCounts[iterStat.index]},
+                  pct=${sprintAdesaoPcts[iterStat.index]},
+                  barCls=${pct >= 100 ? 'full' : (pct < 50 ? 'low' : '')}"
+         style="display:grid;grid-template-columns:1fr 160px 80px 150px 170px;
+                gap:16px;align-items:center;padding:16px 22px;border-top:0.5px solid var(--border);">
+
+      <!-- Name + dates -->
+      <div>
+        <div style="font-weight:600;font-size:13.5px;" th:text="${sprint.name}"></div>
+        <div class="muted" style="font-size:12px;margin-top:2px;font-family:var(--mono);">
+          <span th:text="${#temporals.format(sprint.startDate,'dd/MM')}"></span>
+          →
+          <span th:text="${#temporals.format(sprint.endDate,'dd/MM/yyyy')}"></span>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div>
+        <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
+          <span class="dot"></span>Ativa
+        </span>
+        <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
+          Encerrada
+        </span>
+      </div>
+
+      <!-- Entry count -->
+      <div class="mono" style="font-size:13px;font-weight:600;" th:text="${count}">0</div>
+
+      <!-- Adhesion bar -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="progress" style="flex:1;">
+          <div class="progress-bar"
+               th:classappend="${barCls}"
+               th:style="'width:' + ${pct} + '%'"></div>
+        </div>
+        <span class="mono" style="font-size:12px;flex-shrink:0;" th:text="${pct} + '%'">0%</span>
+      </div>
+
+      <!-- Ver relatório -->
+      <div style="display:flex;justify-content:flex-end;">
+        <a th:href="@{/professor/team/{teamId}/sprint/{sprintId}/report(teamId=${team.id}, sprintId=${sprint.id})}"
+           class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          Ver relatório
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Members roster ── -->
+  <div class="card" style="padding:0;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Membros da equipe</div>
+        <div class="card-subtitle">Acesso ao heatmap de atividade individual.</div>
+      </div>
+    </div>
+
+    <!-- Column header -->
+    <div style="display:grid;grid-template-columns:32px 1fr 200px 140px 120px;
+                gap:14px;align-items:center;padding:10px 22px;
+                background:var(--surface-2);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);
+                font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;">
+      <div></div>
+      <div>Membro</div>
+      <div>Papel</div>
+      <div></div>
+      <div style="text-align:right;">Ações</div>
+    </div>
+
+    <div th:each="member : ${team.members}" class="member-row">
+      <div class="avatar avatar-md"
+           th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+           th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+      <div>
+        <div class="member-name" th:text="${member.name}"></div>
+        <div class="member-role" th:text="${member.email}"></div>
+      </div>
+      <div>
+        <span th:if="${member.id == team.leader.id}" class="badge badge-primary">
+          <span class="dot"></span>Líder
+        </span>
+        <span th:unless="${member.id == team.leader.id}" class="badge badge-neutral">
+          <span class="dot"></span>Membro
+        </span>
+      </div>
+      <div></div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;">
+        <a th:href="@{/professor/team/{teamId}/heatmap/{userId}(teamId=${team.id}, userId=${member.id})}"
+           class="btn btn-ghost btn-sm">Heatmap</a>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>
