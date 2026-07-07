@@ -20,7 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -83,11 +87,19 @@ public class DailyEntryController {
             boolean jaRegistrou = entryHoje.isPresent();
             List<User> membrosAusentes = dailyEntryService.getMembrosAusentesHoje(user);
 
+            Sprint sprintAtiva = historyService.getSprintAtiva(user);
+            long diasRestantes = 0;
+            if (sprintAtiva != null) {
+                diasRestantes = Math.max(0, ChronoUnit.DAYS.between(LocalDate.now(), sprintAtiva.getEndDate()));
+            }
+
             model.addAttribute("registros", registros);
             model.addAttribute("jaRegistrou", jaRegistrou);
             model.addAttribute("entryHoje", entryHoje.orElse(null));
             model.addAttribute("membrosAusentes", membrosAusentes);
             model.addAttribute("usuario", user);
+            model.addAttribute("sprintAtiva", sprintAtiva);
+            model.addAttribute("diasRestantes", diasRestantes);
             model.addAttribute("temSprint", true);
             model.addAttribute("mensagem", null);
 
@@ -118,31 +130,27 @@ public class DailyEntryController {
 
         Sprint sprintAtiva = historyService.getSprintAtiva(user);
 
-        LocalDate start = null;
-        LocalDate end = null;
+        // All entries across all sprints for grouping
+        List<DailyEntry> allHistory = historyService.getUserHistory(
+                user, LocalDate.now().minusYears(2), LocalDate.now());
 
-        if (startDate != null && !startDate.isEmpty()) {
-            start = LocalDate.parse(startDate);
-        } else if (sprintAtiva != null) {
-            start = sprintAtiva.getStartDate();
-        } else {
-            start = LocalDate.now().minusDays(30);
+        // Group by sprint preserving order (most recent sprint first via entry dates)
+        Map<Long, List<DailyEntry>> entriesBySprintId = new LinkedHashMap<>();
+        Map<Long, Sprint> sprintsById = new LinkedHashMap<>();
+        for (DailyEntry entry : allHistory) {
+            Sprint s = entry.getSprint();
+            if (s != null) {
+                entriesBySprintId.computeIfAbsent(s.getId(), k -> new ArrayList<>()).add(entry);
+                sprintsById.putIfAbsent(s.getId(), s);
+            }
         }
+        List<Sprint> allSprints = new ArrayList<>(sprintsById.values());
 
-        if (endDate != null && !endDate.isEmpty()) {
-            end = LocalDate.parse(endDate);
-        } else if (sprintAtiva != null) {
-            end = sprintAtiva.getEndDate();
-        } else {
-            end = LocalDate.now();
-        }
-
-        List<DailyEntry> history = historyService.getUserHistory(user, start, end);
-
-        model.addAttribute("history", history);
+        model.addAttribute("history", allHistory);
+        model.addAttribute("allSprints", allSprints);
+        model.addAttribute("entriesBySprintId", entriesBySprintId);
+        model.addAttribute("totalEntries", allHistory.size());
         model.addAttribute("sprintAtiva", sprintAtiva);
-        model.addAttribute("startDate", start);
-        model.addAttribute("endDate", end);
         model.addAttribute("usuario", user);
 
         return "member/history";

@@ -1,243 +1,217 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Painel da Professora - Diário de Bordo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .progress-bar-container {
-            background-color: #e9ecef;
-            border-radius: 10px;
-            height: 20px;
-            overflow: hidden;
-            position: relative;
-            margin: 5px 0;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #28a745, #20c997);
-            border-radius: 10px;
-            transition: width 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 5px;
-            font-size: 12px;
-            color: white;
-            font-weight: bold;
-        }
-        .release-card {
-            border-left: 4px solid #007bff;
-            margin-bottom: 8px;
-            padding: 6px 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
-        .release-card.completed {
-            border-left-color: #28a745;
-        }
-        .release-card.in-progress {
-            border-left-color: #ffc107;
-        }
-        .sprint-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-        }
-        .sprint-dot.completed {
-            background-color: #28a745;
-        }
-        .sprint-dot.pending {
-            background-color: #dee2e6;
-        }
-        .team-card {
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-        .team-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .badge-sprints {
-            font-size: 0.8rem;
-        }
-    </style>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Painel')}"></head>
 <body>
-    <div class="container mt-4">
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="bg-primary text-white p-3 rounded">
-                    <h2><i class="fas fa-chalkboard-teacher"></i> Painel da Professora</h2>
-                    <p class="mb-0">Visão geral de todas as equipes e progresso das sprints</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Cards de estatísticas -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card text-white bg-info">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-users"></i> Total de Equipes</h5>
-                        <h2 class="card-text" th:text="${totalTeams}">0</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-success">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-user-friends"></i> Total de Usuários</h5>
-                        <h2 class="card-text" th:text="${totalUsers}">0</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-warning">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-tasks"></i> Progresso Médio</h5>
-                        <h2 class="card-text" th:text="${avgProgress} + '%'">0%</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link active" th:href="@{/professor/panel}">Painel</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
 
-        <!-- Lista de Equipes com Progresso -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fas fa-list"></i> Equipes Cadastradas</h5>
-                    </div>
-                    <div class="card-body">
-                        <div th:if="${#lists.isEmpty(teams)}" class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> Nenhuma equipe cadastrada ainda.
-                        </div>
-                        
-                        <div th:unless="${#lists.isEmpty(teams)}">
-                            <div class="row">
-                                <div th:each="team, iterStat : ${teams}" class="col-md-6 mb-4">
-                                    <div class="card team-card h-100">
-                                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                            <h5 class="mb-0" th:text="${team.name}">Equipe</h5>
-                                            <span class="badge bg-light text-dark">
-                                                <i class="fas fa-users"></i> <span th:text="${team.members.size()}">0</span>
-                                            </span>
-                                        </div>
-                                        <div class="card-body">
-                                            <p><strong>Líder:</strong> <span th:text="${team.leader.name}"></span></p>
-                                            
-                                            <div th:with="progress=${teamProgressList[iterStat.index]}">
-                                                <!-- Barra de Progresso Geral -->
-                                                <div class="d-flex justify-content-between">
-                                                    <small>Progresso Geral</small>
-                                                    <small th:text="${progress.progressPercentage} + '%'"></small>
-                                                </div>
-                                                <div class="progress-bar-container">
-                                                    <div class="progress-bar-fill" 
-                                                         th:style="'width: ' + ${progress.progressPercentage} + '%'"
-                                                         th:text="${progress.progressPercentage} + '%'">
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Releases -->
-                                                <div class="mt-2">
-                                                    <small>Releases:</small>
-                                                    <div th:each="release : ${progress.releases}" class="release-card mt-1">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="small" th:text="${release.releaseName}"></span>
-                                                            <span class="badge-sprints">
-                                                                <span th:text="${release.completedSprints}"></span>
-                                                                <span>/</span>
-                                                                <span th:text="${release.totalSprints}"></span>
-                                                                <span class="ms-1">
-                                                                    <span th:each="sprint : ${release.sprints}">
-                                                                        <span class="sprint-dot" 
-                                                                              th:classappend="${sprint.completed} ? 'completed' : 'pending'"
-                                                                              th:title="${sprint.completed} ? 'Sprint ' + ${sprint.sprintNumber} + ' concluída' : 'Sprint ' + ${sprint.sprintNumber} + ' pendente'">
-                                                                        </span>
-                                                                    </span>
-                                                                </span>
-                                                            </span>
-                                                        </div>
-                                                        <div class="progress-bar-container" style="height: 6px;">
-                                                            <div class="progress-bar-fill" 
-                                                                 th:style="'width: ' + ${release.progressPercentage} + '%'"
-                                                                 style="height: 6px; font-size: 0;">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Sprint Atual -->
-                                                <div class="mt-2">
-                                                    <span th:if="${progress.currentSprintName != null}" class="badge bg-warning">
-                                                        <i class="fas fa-spinner fa-spin"></i> 
-                                                        Atual: <span th:text="${progress.currentSprintName}"></span>
-                                                    </span>
-                                                    <span th:unless="${progress.currentSprintName != null}" class="badge bg-secondary">
-                                                        <i class="fas fa-pause"></i> Nenhuma sprint ativa
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-footer bg-transparent">
-                                            <div class="d-flex flex-wrap gap-1">
-                                                <a th:href="@{/professor/team/{id}(id=${team.id})}" 
-                                                   class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-eye"></i> Detalhes
-                                                </a>
-                                                <button class="btn btn-outline-secondary btn-sm" 
-                                                        th:data-bs-toggle="modal" 
-                                                        th:data-bs-target="'#membersModal' + ${team.id}">
-                                                    <i class="fas fa-users"></i> Membros
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="page">
+
+  <!-- flash messages -->
+  <div th:if="${success}"
+       style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 16px;font-size:13px;margin-bottom:20px;border:0.5px solid rgba(21,128,61,0.15);"
+       th:text="${success}"></div>
+  <div th:if="${error}"
+       style="background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 16px;font-size:13px;margin-bottom:20px;border:0.5px solid rgba(185,28,28,0.2);"
+       th:text="${error}"></div>
+
+  <!-- ── Page header ── -->
+  <div class="page-header" style="margin-bottom:28px;">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Visão geral</div>
+      <h1 class="h1" style="margin:0;">Painel da professora</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        Acompanhe o progresso de todas as equipes em tempo real.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── KPI strip ── -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Equipes cadastradas</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${totalTeams}">0</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Usuários ativos</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${totalUsers}">0</span>
+      </div>
+    </div>
+    <div class="card" style="padding:20px 22px;">
+      <div class="label" style="margin-bottom:8px;">Progresso médio geral</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-1px;">
+        <span class="mono" th:text="${avgProgress} + '%'">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Team grid ── -->
+  <div th:if="${#lists.isEmpty(teams)}"
+       style="text-align:center;padding:80px 20px;color:var(--text-3);">
+    <div style="font-size:48px;margin-bottom:16px;">📋</div>
+    <h2 class="h2" style="margin:0 0 10px;">Nenhuma equipe cadastrada</h2>
+    <p class="muted">As equipes aparecerão aqui assim que forem criadas pelos líderes.</p>
+  </div>
+
+  <div th:unless="${#lists.isEmpty(teams)}" class="team-grid">
+
+    <div th:each="team, iterStat : ${teams}"
+         th:with="progress=${teamProgressList[iterStat.index]},
+                  registradosHoje=${registradosHojeMap != null ? registradosHojeMap.get(team.id) : 0},
+                  pct=${#numbers.formatDecimal(progress.progressPercentage,1,0)},
+                  barCls=${progress.progressPercentage >= 100 ? 'full' : (progress.progressPercentage < 50 ? 'low' : '')}"
+         class="team-card">
+
+      <!-- header: nome + sprint name + badge -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h3 th:text="${team.name}"></h3>
+          <div class="muted" style="font-size:12.5px;margin-top:3px;">
+            <span th:if="${progress.currentSprintName != null}" th:text="${progress.currentSprintName}"></span>
+            <span th:unless="${progress.currentSprintName != null}">Sem sprint ativa</span>
+          </div>
         </div>
+        <span th:if="${progress.currentSprintName != null}" class="badge badge-primary">
+          <span class="dot"></span>Ativa
+        </span>
+        <span th:unless="${progress.currentSprintName != null}" class="badge badge-neutral">
+          Encerrada
+        </span>
+      </div>
+
+      <!-- member avatars stack -->
+      <div class="team-members-stack">
+        <div th:each="member, mStat : ${team.members}"
+             th:if="${mStat.index < 5}"
+             class="avatar avatar-md"
+             th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+             th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+        <div th:if="${team.members.size() > 5}"
+             class="avatar avatar-md"
+             style="background:var(--surface-2);color:var(--text-2);font-size:11px;">
+          +<span th:text="${team.members.size() - 5}"></span>
+        </div>
+      </div>
+
+      <!-- stats: registros hoje -->
+      <div>
+        <div class="team-stats">
+          <span class="stat-big" th:text="${registradosHoje}">0</span>
+          <span class="stat-of">de <span th:text="${team.members.size()}"></span> membros</span>
+        </div>
+        <div class="stat-label">registraram hoje</div>
+        <div style="margin-top:10px;">
+          <div class="progress">
+            <div class="progress-bar"
+                 th:classappend="${barCls}"
+                 th:style="'width:' + ${pct} + '%'"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- actions -->
+      <div class="actions">
+        <a th:href="@{/professor/team/{id}(id=${team.id})}" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          Ver detalhes
+        </a>
+        <button type="button" class="btn btn-ghost btn-sm"
+                style="color:var(--danger);border-color:rgba(185,28,28,0.25);"
+                th:attr="data-team-name=${team.name}, data-team-id=${team.id}"
+                onclick="abrirExcluir(this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Excluir
+        </button>
+      </div>
+
     </div>
 
-    <!-- Modais para listar membros -->
-    <div th:each="team : ${teams}" th:id="'membersModal' + ${team.id}" class="modal fade" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" th:text="'Membros da Equipe: ' + ${team.name}"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <ul class="list-group">
-                        <li th:each="member : ${team.members}" class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong th:text="${member.name}"></strong>
-                                    <br>
-                                    <small class="text-muted" th:text="${member.email}"></small>
-                                </div>
-                                <span th:if="${member.id == team.leader.id}" class="badge bg-warning">Líder</span>
-                                <span th:unless="${member.id == team.leader.id}" class="badge bg-secondary">Membro</span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     MODAL: Excluir Equipe
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="modal-excluir" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">Excluir equipe</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(185,28,28,0.06);border:0.5px solid rgba(185,28,28,0.2);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--danger);margin-bottom:14px;">
+        Esta ação é irreversível. Todos os dados da equipe, sprints e registros serão perdidos.
+      </div>
+      <p style="margin:0 0 14px;font-size:13.5px;color:var(--text-2);">
+        Para confirmar, digite o nome da equipe:
+        <strong id="excluir-team-name" style="color:var(--text);"></strong>
+      </p>
+      <div class="input-group" style="margin:0;">
+        <label class="input-label">Nome da equipe</label>
+        <input id="confirm-team-name" class="input" type="text" placeholder="Digite o nome exato para confirmar">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-cancelar-excluir" type="button" class="btn btn-ghost">Cancelar</button>
+      <form id="form-excluir" th:action="@{/professor/team/0/delete}" method="post" style="display:inline;">
+        <input type="hidden" id="excluir-team-id" name="_teamId" value="">
+        <button id="btn-confirmar-excluir" type="submit" class="btn btn-danger" disabled>Excluir equipe</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function abrirExcluir(btn) {
+    var name   = btn.getAttribute('data-team-name') || '';
+    var teamId = btn.getAttribute('data-team-id')   || '';
+
+    document.getElementById('excluir-team-name').textContent = name;
+    document.getElementById('excluir-team-id').value = teamId;
+
+    var form = document.getElementById('form-excluir');
+    form.action = '/professor/team/' + teamId + '/delete';
+
+    var input   = document.getElementById('confirm-team-name');
+    var btnConf = document.getElementById('btn-confirmar-excluir');
+    input.value = '';
+    btnConf.disabled = true;
+    input.oninput = function () {
+      btnConf.disabled = (input.value.trim() !== name.trim());
+    };
+
+    var modal = document.getElementById('modal-excluir');
+    modal.style.display = 'grid';
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { input.focus(); }, 50);
+  }
+
+  document.getElementById('btn-cancelar-excluir').addEventListener('click', function () {
+    document.getElementById('modal-excluir').style.display = 'none';
+    document.body.style.overflow = '';
+  });
+
+  document.getElementById('modal-excluir').addEventListener('click', function (e) {
+    if (e.target === this) { this.style.display = 'none'; document.body.style.overflow = ''; }
+  });
+</script>
+
 </body>
 </html>

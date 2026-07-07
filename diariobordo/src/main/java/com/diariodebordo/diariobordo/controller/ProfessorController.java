@@ -15,10 +15,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/professor")
@@ -74,35 +82,120 @@ public class ProfessorController {
             avgProgress = sum / teamProgressList.size();
         }
         
+        Map<Long, Long> registradosHojeMap = new HashMap<>();
+        for (Team team : allTeams) {
+            Sprint activeSprint = sprintRepository.findByTeamAndStatus(team, Sprint.Status.ATIVA).orElse(null);
+            long count = 0;
+            if (activeSprint != null) {
+                count = dailyEntryRepository.findBySprintAndEntryDate(activeSprint, LocalDate.now()).size();
+            }
+            registradosHojeMap.put(team.getId(), count);
+        }
+
         model.addAttribute("teams", allTeams);
         model.addAttribute("teamProgressList", teamProgressList);
         model.addAttribute("totalTeams", allTeams.size());
         model.addAttribute("totalUsers", userRepository.findAll().size());
         model.addAttribute("avgProgress", String.format("%.0f", avgProgress));
-        
+        model.addAttribute("registradosHojeMap", registradosHojeMap);
+
         return "professor/panel";
+    }
+
+    @PostMapping("/team/{teamId}/delete")
+    public String deleteTeam(@PathVariable Long teamId, RedirectAttributes redirectAttributes) {
+        try {
+            teamRepository.deleteById(teamId);
+            redirectAttributes.addFlashAttribute("success", "Equipe excluída com sucesso!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Não foi possível excluir a equipe: " + e.getMessage());
+        }
+        return "redirect:/professor/panel";
     }
     
     @GetMapping("/team/{teamId}")
     public String viewTeam(@PathVariable Long teamId, Model model) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
-        
-        Sprint sprint = sprintRepository.findFirstByOrderByIdDesc().orElse(null);
-        
-        List<DailyEntry> recentEntries = new ArrayList<>();
-        if (sprint != null) {
-            recentEntries = dailyEntryRepository.findBySprint(sprint);
+
+        List<Sprint> allSprints = sprintRepository.findByTeam(team);
+        allSprints.sort(Comparator.comparing(Sprint::getStartDate).reversed());
+
+        Sprint sprintAtiva = allSprints.stream()
+                .filter(s -> s.getStatus() == Sprint.Status.ATIVA)
+                .findFirst()
+                .orElse(null);
+
+        List<Long> sprintEntryCounts = new ArrayList<>();
+        List<Integer> sprintAdesaoPcts = new ArrayList<>();
+        long totalRegistros = 0;
+
+        for (Sprint sprint : allSprints) {
+            List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
+            long count = entries.size();
+            sprintEntryCounts.add(count);
+            totalRegistros += count;
+
+            long sprintDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+            int expectedEntries = team.getMembers().size() * (int) Math.max(1, sprintDays);
+            int pct = expectedEntries > 0
+                    ? (int) Math.min(100, Math.round(count * 100.0 / expectedEntries))
+                    : 0;
+            sprintAdesaoPcts.add(pct);
         }
-        
+
+        long encerradas = allSprints.stream()
+                .filter(s -> s.getStatus() == Sprint.Status.ENCERRADA).count();
+        int mediaAdesao = sprintAdesaoPcts.isEmpty() ? 0
+                : (int) sprintAdesaoPcts.stream().mapToInt(Integer::intValue).average().orElse(0);
+
+        long registradosHoje = 0;
+        if (sprintAtiva != null) {
+            registradosHoje = dailyEntryRepository
+                    .findBySprintAndEntryDate(sprintAtiva, LocalDate.now()).size();
+        }
+
         TeamProgressDTO progress = calculateTeamProgress(team);
-        
+
         model.addAttribute("team", team);
+        model.addAttribute("allSprints", allSprints);
+        model.addAttribute("sprintAtiva", sprintAtiva);
+        model.addAttribute("sprintEntryCounts", sprintEntryCounts);
+        model.addAttribute("sprintAdesaoPcts", sprintAdesaoPcts);
+        model.addAttribute("encerradas", encerradas);
+        model.addAttribute("totalRegistros", totalRegistros);
+        model.addAttribute("mediaAdesao", mediaAdesao);
+        model.addAttribute("registradosHoje", registradosHoje);
         model.addAttribute("progress", progress);
-        model.addAttribute("recentEntries", recentEntries.stream().limit(10).toList());
-        model.addAttribute("sprintAtiva", sprint);
-        
+
         return "professor/team-detail";
+    }
+
+    @GetMapping("/team/{teamId}/sprint/{sprintId}/report")
+    public String viewSprintReport(@PathVariable Long teamId,
+                                   @PathVariable Long sprintId,
+                                   Model model) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        Sprint sprint = sprintRepository.findById(sprintId)
+                .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+
+        List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
+
+        Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                .collect(Collectors.groupingBy(e -> e.getUser().getId()));
+
+        long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+
+        model.addAttribute("team", team);
+        model.addAttribute("sprint", sprint);
+        model.addAttribute("entries", entries);
+        model.addAttribute("entriesByMember", entriesByMember);
+        model.addAttribute("totalDays", totalDays);
+        model.addAttribute("backUrl", "/professor/team/" + teamId);
+
+        return "report";
     }
 
     @GetMapping("/team/{teamId}/heatmap/{userId}")

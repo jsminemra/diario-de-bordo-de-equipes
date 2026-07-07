@@ -1,181 +1,124 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Meu Histórico - Diário de Bordo</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .entry-card {
-            border-left: 4px solid #0d6efd;
-            margin-bottom: 12px;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-        .entry-card .entry-header {
-            background-color: #f8f9fa;
-            padding: 8px 14px;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 4px 4px 0 0;
-        }
-        .entry-card .entry-body {
-            padding: 12px 14px;
-        }
-        .filter-card {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-        .sprint-badge {
-            background-color: #0d6efd;
-            color: #fff;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
-    </style>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Histórico')}"></head>
 <body>
-    <div class="container mt-4">
 
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/member/feed"><i class="fas fa-arrow-left"></i> Voltar ao Feed</a></li>
-                <li class="breadcrumb-item active">Meu Histórico</li>
-            </ol>
-        </nav>
-
-        <!-- Header -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="bg-primary text-white p-3 rounded d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-0"><i class="fas fa-history"></i> Meu Histórico de Registros</h3>
-                        <small th:if="${usuario != null}">
-                            <i class="fas fa-user"></i> <span th:text="${usuario.name}"></span>
-                        </small>
-                    </div>
-                    <div th:if="${sprintAtiva != null}" class="text-end">
-                        <span class="badge bg-light text-primary fs-6">
-                            <i class="fas fa-running"></i>
-                            Sprint: <span th:text="${sprintAtiva.name}"></span>
-                        </span>
-                        <div class="mt-1">
-                            <small>
-                                <span th:text="${#temporals.format(sprintAtiva.startDate, 'dd/MM/yyyy')}"></span>
-                                até
-                                <span th:text="${#temporals.format(sprintAtiva.endDate, 'dd/MM/yyyy')}"></span>
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtro por data -->
-        <div class="filter-card">
-            <h6 class="mb-3"><i class="fas fa-filter"></i> Filtrar por Intervalo de Datas</h6>
-            <form method="get" th:action="@{/member/history}" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label for="startDate" class="form-label">Data Início</label>
-                    <input type="date" class="form-control" id="startDate" name="startDate"
-                           th:value="${startDate}"
-                           th:min="${sprintAtiva != null ? sprintAtiva.startDate : null}"
-                           th:max="${sprintAtiva != null ? sprintAtiva.endDate : null}">
-                </div>
-                <div class="col-md-4">
-                    <label for="endDate" class="form-label">Data Fim</label>
-                    <input type="date" class="form-control" id="endDate" name="endDate"
-                           th:value="${endDate}"
-                           th:min="${sprintAtiva != null ? sprintAtiva.startDate : null}"
-                           th:max="${sprintAtiva != null ? sprintAtiva.endDate : null}">
-                </div>
-                <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Filtrar
-                    </button>
-                    <a th:href="@{/member/history}" class="btn btn-secondary">
-                        <i class="fas fa-undo"></i> Limpar
-                    </a>
-                </div>
-            </form>
-            <div class="mt-2">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i>
-                    Período exibido:
-                    <strong th:text="${#temporals.format(startDate, 'dd/MM/yyyy')}"></strong>
-                    até
-                    <strong th:text="${#temporals.format(endDate, 'dd/MM/yyyy')}"></strong>
-                </small>
-            </div>
-        </div>
-
-        <!-- Contador -->
-        <div th:if="${not #lists.isEmpty(history)}" class="alert alert-success">
-            <i class="fas fa-check-circle"></i>
-            <strong th:text="${#lists.size(history)}"></strong> registro(s) encontrado(s) no período.
-        </div>
-
-        <!-- Estado vazio -->
-        <div th:if="${#lists.isEmpty(history)}" class="alert alert-info text-center py-4">
-            <i class="fas fa-inbox fa-3x d-block mb-3 text-muted"></i>
-            <h5>Nenhum registro encontrado</h5>
-            <p class="mb-2 text-muted">Você ainda não possui registros no período selecionado.</p>
-            <a href="/member/feed" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Fazer meu primeiro registro
-            </a>
-        </div>
-
-        <!-- Lista de entradas -->
-        <div th:unless="${#lists.isEmpty(history)}">
-            <div th:each="entry : ${history}" class="entry-card">
-                <div class="entry-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="fas fa-calendar-day text-primary"></i>
-                        <strong th:text="${#temporals.format(entry.entryDate, 'EEEE, dd/MM/yyyy')}"></strong>
-                    </div>
-                    <small class="text-muted">
-                        <i class="fas fa-clock"></i>
-                        Registrado às <span th:text="${#temporals.format(entry.createdAt, 'HH:mm')}"></span>
-                    </small>
-                </div>
-                <div class="entry-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <p class="small mb-0">
-                                <strong class="text-success">
-                                    <i class="fas fa-check-circle"></i> O que fez:
-                                </strong><br>
-                                <span th:text="${entry.whatWasDone}"></span>
-                            </p>
-                        </div>
-                        <div class="col-md-4">
-                            <p class="small mb-0">
-                                <strong class="text-primary">
-                                    <i class="fas fa-arrow-right"></i> O que fará:
-                                </strong><br>
-                                <span th:text="${entry.whatWillBeDone}"></span>
-                            </p>
-                        </div>
-                        <div class="col-md-4">
-                            <p class="small mb-0">
-                                <strong class="text-warning">
-                                    <i class="fas fa-exclamation-triangle"></i> Impedimentos:
-                                </strong><br>
-                                <span th:if="${entry.impediments != null and !entry.impediments.isEmpty()}"
-                                      class="text-danger" th:text="${entry.impediments}"></span>
-                                <span th:unless="${entry.impediments != null and !entry.impediments.isEmpty()}"
-                                      class="text-muted">Nenhum</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/member/feed}">Hoje</a>
+      <a class="topnav-link" th:href="@{/member/heatmap}">Perfil</a>
+      <a class="topnav-link active" th:href="@{/member/history}">Histórico</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <div style="display:flex;align-items:center;gap:10px;padding-left:8px;border-left:0.5px solid var(--border);">
+      <div style="text-align:right;">
+        <div style="font-size:12.5px;font-weight:600;line-height:1.2;" th:text="${usuario != null ? usuario.name : ''}"></div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.2;" th:text="${usuario != null ? usuario.role.name() : ''}"></div>
+      </div>
+      <div class="avatar avatar-md"
+           th:style="'background:hsl(' + ${usuario != null ? (usuario.name.hashCode() % 360 + 360) % 360 : 200} + ',55%,38%)'"
+           th:text="${usuario != null and usuario.name.length() >= 2 ? usuario.name.substring(0,2).toUpperCase() : '?'}">??</div>
+    </div>
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Meu histórico</div>
+      <h1 class="h1" style="margin:0;" th:text="${usuario != null ? usuario.name : 'Histórico'}"></h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        <span class="mono" th:text="${totalEntries}">0</span> registros
+        <span th:if="${!allSprints.isEmpty()}">
+          · <span class="mono" th:text="${allSprints.size()}">0</span> sprints
+        </span>
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a th:href="@{/member/heatmap}" class="btn btn-ghost">Voltar ao perfil</a>
+    </div>
+  </div>
+
+  <!-- ── Empty state ── -->
+  <div th:if="${totalEntries == 0}"
+       class="card" style="text-align:center;padding:60px 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">📋</div>
+    <h2 class="h2" style="margin:0 0 10px;">Nenhum registro encontrado</h2>
+    <p class="muted">Seus registros diários aparecerão aqui agrupados por sprint.</p>
+    <a th:href="@{/member/feed}" class="btn btn-ghost" style="display:inline-flex;margin-top:20px;">
+      Ir para o feed
+    </a>
+  </div>
+
+  <!-- ── Sprint groups ── -->
+  <div th:unless="${totalEntries == 0}">
+    <div th:each="sprint : ${allSprints}"
+         th:with="sprintEntries=${entriesBySprintId.get(sprint.id)}"
+         th:if="${sprintEntries != null and !sprintEntries.isEmpty()}"
+         style="margin-bottom:24px;">
+
+      <div class="card">
+        <!-- Sprint group header -->
+        <div class="card-header">
+          <div>
+            <div class="card-title" th:text="${sprint.name}"></div>
+            <div class="card-subtitle">
+              <span class="mono" th:text="${#temporals.format(sprint.startDate,'dd/MM/yyyy')}"></span>
+              →
+              <span class="mono" th:text="${#temporals.format(sprint.endDate,'dd/MM/yyyy')}"></span>
+              ·
+              <span class="mono" th:text="${sprintEntries.size()}"></span>
+              <span th:if="${sprintEntries.size() == 1}"> registro</span>
+              <span th:unless="${sprintEntries.size() == 1}"> registros</span>
+            </div>
+          </div>
+          <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
+            <span class="dot"></span>Ativa
+          </span>
+          <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
+            Encerrada
+          </span>
+        </div>
+
+        <!-- Entries -->
+        <div class="card-body">
+          <div th:each="entry : ${sprintEntries}" class="timeline-item">
+            <div class="timeline-date">
+              <span th:text="${#temporals.format(entry.entryDate, 'dd/MM/yyyy')}"></span>
+              <span class="weekday" th:text="${#temporals.format(entry.entryDate, 'EEE')}"></span>
+            </div>
+            <div class="timeline-body">
+              <div class="feed-cell">
+                <span class="label">O que fiz</span>
+                <p th:text="${entry.whatWasDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">O que farei</span>
+                <p th:text="${entry.whatWillBeDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">Impedimentos</span>
+                <p th:text="${(entry.impediments != null and !entry.impediments.isEmpty()) ? entry.impediments : 'Nenhum.'}"
+                   th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>
