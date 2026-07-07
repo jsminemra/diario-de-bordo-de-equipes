@@ -234,16 +234,17 @@ public class ProfessorController {
         }
         
         long diasComRegistro = heatmapData.stream().filter(d -> d.getCount() > 0).count();
-        double percentual = (double) diasComRegistro / heatmapData.size() * 100;
+        int percentual = heatmapData.isEmpty() ? 0
+                : (int) Math.round((double) diasComRegistro / heatmapData.size() * 100);
         long totalRegistros = heatmapData.stream().mapToLong(HeatmapDataDTO::getCount).sum();
-        
+
         model.addAttribute("team", team);
         model.addAttribute("member", member);
         model.addAttribute("heatmapData", heatmapData);
         model.addAttribute("weeks", weeks);
         model.addAttribute("days", 90);
         model.addAttribute("diasComRegistro", diasComRegistro);
-        model.addAttribute("percentual", String.format("%.0f", percentual));
+        model.addAttribute("percentual", percentual);
         model.addAttribute("totalRegistros", totalRegistros);
         
         return "professor/member-heatmap";
