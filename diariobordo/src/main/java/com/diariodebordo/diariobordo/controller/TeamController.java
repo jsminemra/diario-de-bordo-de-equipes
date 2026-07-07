@@ -13,6 +13,7 @@ import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
 import com.diariodebordo.diariobordo.service.TeamService;
 import jakarta.validation.Valid;
@@ -44,6 +45,7 @@ public class TeamController {
     private final SprintRepository sprintRepository;
     private final SprintService sprintService;
     private final HistoryService historyService;
+    private final SprintReportService sprintReportService;
 
     public TeamController(TeamService teamService,
                           UserRepository userRepository,
@@ -51,7 +53,8 @@ public class TeamController {
                           DailyEntryRepository dailyEntryRepository,
                           SprintRepository sprintRepository,
                           SprintService sprintService,
-                          HistoryService historyService) {
+                          HistoryService historyService,
+                          SprintReportService sprintReportService) {
         this.teamService = teamService;
         this.userRepository = userRepository;
         this.dailyEntryService = dailyEntryService;
@@ -59,6 +62,7 @@ public class TeamController {
         this.sprintRepository = sprintRepository;
         this.sprintService = sprintService;
         this.historyService = historyService;
+        this.sprintReportService = sprintReportService;
     }
     
     @GetMapping("/team/create")
@@ -368,6 +372,10 @@ public class TeamController {
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
             model.addAttribute("backUrl", "/leader/team/" + teamId);
+            if (sprint != null) {
+                model.addAttribute("sprintReport",
+                        sprintReportService.findBySprint(sprint).orElse(null));
+            }
 
             return "report";
         } catch (RuntimeException e) {
@@ -407,6 +415,8 @@ public class TeamController {
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
             model.addAttribute("backUrl", "/leader/team/" + teamId + "/history");
+            model.addAttribute("sprintReport",
+                    sprintReportService.findBySprint(sprint).orElse(null));
 
             return "report";
         } catch (RuntimeException e) {
@@ -430,7 +440,8 @@ public class TeamController {
             if (sprint != null) {
                 sprint.setStatus(Sprint.Status.ENCERRADA);
                 sprintRepository.save(sprint);
-                redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada com sucesso!");
+                sprintReportService.generateAndSave(sprint, team);
+                redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada e relatório gerado com sucesso!");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
             }

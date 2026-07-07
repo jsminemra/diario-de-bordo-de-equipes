@@ -11,6 +11,7 @@ import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.HeatmapService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +38,7 @@ public class ProfessorController {
     private final SprintRepository sprintRepository;
     private final DailyEntryRepository dailyEntryRepository;
     private final HeatmapService heatmapService;
+    private final SprintReportService sprintReportService;
 
     private static final int[][] RELEASE_SPRINTS = {
         {1, 2},   // Release I: Sprints 1-2
@@ -52,16 +54,18 @@ public class ProfessorController {
         "Release IV - Empacotamento"
     };
 
-    public ProfessorController(TeamRepository teamRepository, 
+    public ProfessorController(TeamRepository teamRepository,
                                UserRepository userRepository,
                                SprintRepository sprintRepository,
                                DailyEntryRepository dailyEntryRepository,
-                               HeatmapService heatmapService) {
+                               HeatmapService heatmapService,
+                               SprintReportService sprintReportService) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.sprintRepository = sprintRepository;
         this.dailyEntryRepository = dailyEntryRepository;
         this.heatmapService = heatmapService;
+        this.sprintReportService = sprintReportService;
     }
 
     @GetMapping("/panel")
@@ -194,6 +198,8 @@ public class ProfessorController {
         model.addAttribute("entriesByMember", entriesByMember);
         model.addAttribute("totalDays", totalDays);
         model.addAttribute("backUrl", "/professor/team/" + teamId);
+        model.addAttribute("sprintReport",
+                sprintReportService.findBySprint(sprint).orElse(null));
 
         return "report";
     }
@@ -228,16 +234,17 @@ public class ProfessorController {
         }
         
         long diasComRegistro = heatmapData.stream().filter(d -> d.getCount() > 0).count();
-        double percentual = (double) diasComRegistro / heatmapData.size() * 100;
+        int percentual = heatmapData.isEmpty() ? 0
+                : (int) Math.round((double) diasComRegistro / heatmapData.size() * 100);
         long totalRegistros = heatmapData.stream().mapToLong(HeatmapDataDTO::getCount).sum();
-        
+
         model.addAttribute("team", team);
         model.addAttribute("member", member);
         model.addAttribute("heatmapData", heatmapData);
         model.addAttribute("weeks", weeks);
         model.addAttribute("days", 90);
         model.addAttribute("diasComRegistro", diasComRegistro);
-        model.addAttribute("percentual", String.format("%.0f", percentual));
+        model.addAttribute("percentual", percentual);
         model.addAttribute("totalRegistros", totalRegistros);
         
         return "professor/member-heatmap";
