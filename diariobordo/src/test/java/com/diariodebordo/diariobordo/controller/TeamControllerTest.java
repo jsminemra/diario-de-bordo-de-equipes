@@ -10,6 +10,7 @@ import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
 import com.diariodebordo.diariobordo.service.TeamService;
@@ -64,6 +65,9 @@ class TeamControllerTest {
 
     @MockitoBean
     private SprintReportService sprintReportService;
+
+    @MockitoBean
+    private PdfExportService pdfExportService;
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;

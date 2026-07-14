@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    /* Template dedicado à exportação em PDF (OpenHTMLtoPDF não suporta
+       flexbox, grid nem variáveis CSS — por isso este layout usa apenas
+       blocos/tabelas e cores literais, em vez de reaproveitar styles.css). */
+    @page { size: A4; margin: 24mm 18mm; }
+
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      color: #0F172A;
+      font-size: 11px;
+      margin: 0;
+    }
+
+    .brand { font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 18px; }
+
+    .cover { border-bottom: 2px solid #E2E8F0; padding-bottom: 16px; margin-bottom: 20px; }
+    .cover .eyebrow { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #94A3B8; margin-bottom: 6px; }
+    .cover h1 { font-size: 20px; margin: 0 0 8px; color: #0F172A; }
+    .cover .subtitle { font-size: 11px; color: #475569; margin: 0 0 14px; }
+
+    table.cover-stats { border-collapse: collapse; width: 100%; }
+    table.cover-stats td { padding: 0 18px 0 0; vertical-align: top; }
+    .stat-label { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 3px; }
+    .stat-value { font-size: 12px; font-weight: bold; color: #0F172A; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 9px; font-weight: bold; }
+    .badge-primary { background: #DCEAFB; color: #185FA5; }
+    .badge-neutral { background: #F1F5F9; color: #475569; }
+
+    .member-section { margin-top: 22px; page-break-inside: avoid; }
+    table.member-header { width: 100%; border-collapse: collapse; background: #F8FAFC; border: 0.5px solid #E2E8F0; }
+    table.member-header td { padding: 8px 10px; vertical-align: middle; }
+    .member-name { font-weight: bold; font-size: 12px; color: #0F172A; }
+    .member-email { font-size: 9px; color: #94A3B8; }
+    .member-count { font-size: 9px; color: #475569; text-align: right; }
+
+    .synthesis { margin-top: 8px; border: 0.5px solid #E2E8F0; padding: 8px 10px; }
+    .synthesis-title { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 6px; }
+    table.synthesis-grid { width: 100%; border-collapse: collapse; }
+    table.synthesis-grid > tbody > tr > td { width: 33%; vertical-align: top; padding-right: 10px; }
+    .field-label { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 4px; }
+    ul.field-list { margin: 0; padding-left: 14px; }
+    ul.field-list li { margin-bottom: 3px; font-size: 10px; }
+    .entry-date { font-family: monospace; font-size: 9px; color: #94A3B8; }
+    .empty-note { font-size: 10px; color: #94A3B8; font-style: italic; padding: 6px 0; }
+
+    .footer { margin-top: 30px; padding-top: 10px; border-top: 0.5px solid #E2E8F0; font-size: 9px; color: #94A3B8; }
+  </style>
+</head>
+<body>
+
+<div class="brand">Diário de Bordo de Equipes</div>
+
+<div class="cover" th:if="${sprint != null}">
+  <div class="eyebrow">Relatório de Sprint</div>
+  <h1 th:text="${sprint.name}">Sprint</h1>
+  <p class="subtitle" th:if="${team != null}">
+    Equipe: <strong th:text="${team.name}"></strong>
+    &#183;
+    Líder: <span th:text="${team.leader.name}"></span>
+  </p>
+
+  <table class="cover-stats">
+    <tr>
+      <td>
+        <div class="stat-label">Período</div>
+        <div class="stat-value">
+          <span th:text="${#temporals.format(sprint.startDate,'dd/MM/yyyy')}"></span>
+          -
+          <span th:text="${#temporals.format(sprint.endDate,'dd/MM/yyyy')}"></span>
+        </div>
+      </td>
+      <td>
+        <div class="stat-label">Duração</div>
+        <div class="stat-value"><span th:text="${totalDays}"></span> dias</div>
+      </td>
+      <td>
+        <div class="stat-label">Status</div>
+        <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">Ativa</span>
+        <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">Encerrada</span>
+      </td>
+      <td>
+        <div class="stat-label">Registros no período</div>
+        <div class="stat-value" th:text="${entries.size()}">0</div>
+      </td>
+      <td th:if="${team != null}">
+        <div class="stat-label">Membros</div>
+        <div class="stat-value" th:text="${team.members.size()}">0</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div th:if="${team != null and sprint != null}">
+  <div th:each="member : ${team.members}" class="member-section"
+       th:with="memberEntries=${entriesByMember != null ? entriesByMember.get(member.id) : null}">
+
+    <table class="member-header">
+      <tr>
+        <td style="width:70%;">
+          <span class="member-name" th:text="${member.name}"></span>
+          &#183;
+          <span class="member-email" th:text="${member.email}"></span>
+          <span th:if="${member.id == team.leader.id}" class="badge badge-primary" style="margin-left:6px;">Líder</span>
+        </td>
+        <td class="member-count" style="width:30%;">
+          <span th:text="${memberEntries != null ? memberEntries.size() : 0}"></span> registros
+        </td>
+      </tr>
+    </table>
+
+    <div th:if="${memberEntries == null or memberEntries.isEmpty()}" class="empty-note">
+      Nenhum registro nesta sprint.
+    </div>
+
+    <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="synthesis">
+      <div class="synthesis-title">Síntese da sprint</div>
+      <table class="synthesis-grid">
+        <tr>
+          <td>
+            <div class="field-label">O que foi feito</div>
+            <ul class="field-list">
+              <li th:each="entry : ${memberEntries}">
+                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                <span th:text="${entry.whatWasDone}"></span>
+              </li>
+            </ul>
+          </td>
+          <td>
+            <div class="field-label">O que foi planejado</div>
+            <ul class="field-list">
+              <li th:each="entry : ${memberEntries}">
+                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                <span th:text="${entry.whatWillBeDone}"></span>
+              </li>
+            </ul>
+          </td>
+          <td>
+            <div class="field-label">Impedimentos</div>
+            <ul class="field-list" th:if="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}">
+              <li th:each="entry : ${memberEntries}" th:if="${entry.impediments != null and !entry.impediments.isEmpty()}">
+                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                <span th:text="${entry.impediments}"></span>
+              </li>
+            </ul>
+            <p th:unless="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}" class="empty-note" style="padding:0;">
+              Nenhum impedimento registrado.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Diário de Bordo de Equipes &#183; Gerado em <span th:text="${#temporals.format(#temporals.createNow(),'dd/MM/yyyy HH:mm')}"></span>
+</div>
+
+</body>
+</html>

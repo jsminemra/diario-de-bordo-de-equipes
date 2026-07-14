@@ -13,10 +13,15 @@ import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
 import com.diariodebordo.diariobordo.service.TeamService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +33,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +52,7 @@ public class TeamController {
     private final SprintService sprintService;
     private final HistoryService historyService;
     private final SprintReportService sprintReportService;
+    private final PdfExportService pdfExportService;
 
     public TeamController(TeamService teamService,
                           UserRepository userRepository,
@@ -54,7 +61,8 @@ public class TeamController {
                           SprintRepository sprintRepository,
                           SprintService sprintService,
                           HistoryService historyService,
-                          SprintReportService sprintReportService) {
+                          SprintReportService sprintReportService,
+                          PdfExportService pdfExportService) {
         this.teamService = teamService;
         this.userRepository = userRepository;
         this.dailyEntryService = dailyEntryService;
@@ -63,6 +71,7 @@ public class TeamController {
         this.sprintService = sprintService;
         this.historyService = historyService;
         this.sprintReportService = sprintReportService;
+        this.pdfExportService = pdfExportService;
     }
     
     @GetMapping("/team/create")
@@ -386,6 +395,7 @@ public class TeamController {
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
             model.addAttribute("backUrl", "/leader/team/" + teamId);
+            model.addAttribute("canExportPdf", sprint != null);
             if (sprint != null) {
                 model.addAttribute("sprintReport",
                         sprintReportService.findBySprint(sprint).orElse(null));
@@ -429,6 +439,7 @@ public class TeamController {
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
             model.addAttribute("backUrl", "/leader/team/" + teamId + "/history");
+            model.addAttribute("canExportPdf", true);
             model.addAttribute("sprintReport",
                     sprintReportService.findBySprint(sprint).orElse(null));
 
@@ -437,6 +448,49 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/leader/team/" + teamId;
         }
+    }
+
+    @GetMapping("/team/{teamId}/sprint/{sprintId}/report/pdf")
+    public ResponseEntity<byte[]> exportSprintReportPdf(@PathVariable Long teamId,
+                                                         @PathVariable Long sprintId,
+                                                         Authentication auth) {
+        User leader = getAuthenticatedUser(auth);
+        Team team = teamService.getTeamWithMembers(teamId);
+
+        if (!team.getLeader().getId().equals(leader.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Sprint sprint = sprintRepository.findById(sprintId).orElse(null);
+        if (sprint == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint).stream()
+                .sorted(Comparator.comparing(DailyEntry::getEntryDate))
+                .toList();
+
+        Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                .collect(Collectors.groupingBy(e -> e.getUser().getId()));
+
+        long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("team", team);
+        vars.put("sprint", sprint);
+        vars.put("entries", entries);
+        vars.put("entriesByMember", entriesByMember);
+        vars.put("totalDays", totalDays);
+
+        byte[] pdf = pdfExportService.renderReportPdf(vars);
+
+        String filename = "relatorio-" + PdfExportService.sanitizeFileNamePart(team.getName())
+                + "-sprint" + sprint.getId() + ".pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
     }
 
     @PostMapping("/team/{teamId}/sprint/close")
