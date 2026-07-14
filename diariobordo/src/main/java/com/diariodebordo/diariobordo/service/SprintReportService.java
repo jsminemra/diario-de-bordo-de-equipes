@@ -6,6 +6,9 @@ import com.diariodebordo.diariobordo.model.SprintReport;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintReportRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +19,7 @@ import java.util.Optional;
 @Service
 public class SprintReportService {
 
+    private static final Logger log = LoggerFactory.getLogger(SprintReportService.class);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final SprintReportRepository sprintReportRepository;
@@ -67,5 +71,20 @@ public class SprintReportService {
 
     public Optional<SprintReport> findBySprint(Sprint sprint) {
         return sprintReportRepository.findBySprint(sprint);
+    }
+
+    /**
+     * Gera o relatório em segundo plano para não bloquear a requisição de
+     * encerramento da sprint. Falhas ficam registradas em log; o líder pode
+     * disparar uma nova tentativa síncrona via generateAndSave se o
+     * relatório não aparecer.
+     */
+    @Async
+    public void generateAndSaveAsync(Sprint sprint, Team team) {
+        try {
+            generateAndSave(sprint, team);
+        } catch (Exception e) {
+            log.error("Falha ao gerar relatório para a sprint {}: {}", sprint.getId(), e.getMessage(), e);
+        }
     }
 }
