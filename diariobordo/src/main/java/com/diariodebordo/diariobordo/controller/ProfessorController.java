@@ -188,6 +188,7 @@ public class ProfessorController {
         List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
 
         Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                .sorted(Comparator.comparing(DailyEntry::getEntryDate))
                 .collect(Collectors.groupingBy(e -> e.getUser().getId()));
 
         long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
