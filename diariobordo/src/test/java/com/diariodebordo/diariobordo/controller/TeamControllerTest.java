@@ -4,11 +4,13 @@ import com.diariodebordo.diariobordo.config.SecurityConfig;
 import com.diariodebordo.diariobordo.dto.TeamCreateDTO;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
 import com.diariodebordo.diariobordo.service.TeamService;
 import org.junit.jupiter.api.Test;
@@ -56,6 +58,12 @@ class TeamControllerTest {
 
     @MockitoBean
     private HistoryService historyService;
+
+    @MockitoBean
+    private DailyEntryRepository dailyEntryRepository;
+
+    @MockitoBean
+    private SprintReportService sprintReportService;
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Acesso negado')}"></head>
+<body>
+
+<div class="page" style="max-width:520px;margin:0 auto;text-align:center;padding-top:100px;">
+  <div style="font-size:56px;margin-bottom:20px;">🔒</div>
+  <h1 class="h1" style="margin:0 0 10px;">Acesso negado</h1>
+  <p class="muted" style="margin:0 0 28px;font-size:14px;">
+    Você não tem permissão para acessar esta página com o seu perfil atual.
+  </p>
+  <a href="/dashboard" class="btn btn-primary" style="display:inline-flex;">Voltar ao início</a>
+</div>
+
+</body>
+</html>

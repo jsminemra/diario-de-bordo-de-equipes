@@ -51,7 +51,7 @@ class DailyEntryControllerTest {
     // ─── GET /member/history ─────────────────────────────────────────────────
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_deveRetornarStatus200EViewHistory() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -65,7 +65,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_devePassarHistoryEUsuarioAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
         DailyEntry entry = criarEntrada(user);
@@ -86,7 +86,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_comFiltroDeData_deveUsarDatasInformadasComoParametros() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -110,7 +110,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_semSprintAtiva_deveUsarJanelaDe30DiasComoDefault() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -125,7 +125,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_comSprintAtiva_deveUsarDatasDeSprintComoDefault() throws Exception {
         User user = criarUsuario("membro@test.com");
         Sprint sprint = criarSprintAtiva();
@@ -143,7 +143,7 @@ class DailyEntryControllerTest {
     // ─── GET /member/feed ────────────────────────────────────────────────────
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getFeed_devePassarMembrosAusentesAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -159,7 +159,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getFeed_devePassarEntryHojeAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
         DailyEntry entryHoje = criarEntrada(user);

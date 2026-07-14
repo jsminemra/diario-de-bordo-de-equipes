@@ -6,6 +6,7 @@ import com.diariodebordo.diariobordo.model.User;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.HeatmapService;
+import com.diariodebordo.diariobordo.service.HistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -44,10 +45,13 @@ class HeatmapControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private HistoryService historyService;
+
     // ─── GET /member/heatmap ─────────────────────────────────────────────────
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getMemberHeatmap_deveRetornarStatus200EViewMemberHeatmap() throws Exception {
         User user = criarUsuario("membro@test.com", User.Role.MEMBER);
 
@@ -60,7 +64,7 @@ class HeatmapControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getMemberHeatmap_devePassarAtributosEstatisticosAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com", User.Role.MEMBER);
         List<HeatmapDataDTO> heatmapData = criarHeatmapData(7);
@@ -80,7 +84,7 @@ class HeatmapControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getMemberHeatmap_deveUsarJanelaDe180Dias() throws Exception {
         User user = criarUsuario("membro@test.com", User.Role.MEMBER);
 
@@ -93,7 +97,7 @@ class HeatmapControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getMemberHeatmap_devePassarRoleMemberAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com", User.Role.MEMBER);
 
@@ -141,7 +145,7 @@ class HeatmapControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getLeaderHeatmap_comRoleMember_deveRetornar403() throws Exception {
         mockMvc.perform(get("/leader/heatmap"))
                 .andExpect(status().isForbidden());
