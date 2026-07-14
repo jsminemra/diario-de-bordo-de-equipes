@@ -27,33 +27,13 @@ public class DailyEntryService {
 
     public DailyEntry salvarOuEditar(DailyEntryDTO dto, User user) {
         Team userTeam = getUserTeam(user);
-        
+
         if (userTeam == null) {
             throw new RuntimeException("Usuário não pertence a nenhuma equipe. Aguarde o líder te adicionar.");
         }
 
-        List<Sprint> sprints = sprintRepository.findByTeam(userTeam);
-        
-        if (sprints.isEmpty()) {
-            Sprint novaSprint = new Sprint();
-            novaSprint.setName("Sprint 1");
-            novaSprint.setTeam(userTeam);
-            novaSprint.setStartDate(LocalDate.now());
-            novaSprint.setEndDate(LocalDate.now().plusWeeks(2));
-            novaSprint.setStatus(Sprint.Status.ATIVA);
-            sprintRepository.save(novaSprint);
-            System.out.println("✅ Sprint automática criada para a equipe: " + userTeam.getName());
-            
-            sprints = sprintRepository.findByTeam(userTeam);
-        }
-        
-        if (sprints.isEmpty()) {
-            throw new RuntimeException("Nenhuma sprint disponível para sua equipe.");
-        }
-        
-        Sprint sprintAtiva = sprints.stream()
-                .max((s1, s2) -> s1.getId().compareTo(s2.getId()))
-                .orElseThrow(() -> new RuntimeException("Nenhuma sprint encontrada para sua equipe"));
+        Sprint sprintAtiva = sprintRepository.findByTeamAndStatus(userTeam, Sprint.Status.ATIVA)
+                .orElseThrow(() -> new RuntimeException("Nenhuma sprint ativa para sua equipe. Aguarde o líder criar uma nova sprint."));
 
         Optional<DailyEntry> existente = dailyEntryRepository
                 .findByUserAndEntryDate(user, LocalDate.now());
@@ -79,19 +59,12 @@ public class DailyEntryService {
 
     public List<DailyEntry> buscarFeedDoDia(User user) {
         Team userTeam = getUserTeam(user);
-        
+
         if (userTeam == null) {
             return List.of();
         }
-        
-        List<Sprint> sprints = sprintRepository.findByTeam(userTeam);
-        
-        if (sprints.isEmpty()) {
-            return List.of();
-        }
-        
-        Sprint sprintAtiva = sprints.stream()
-                .max((s1, s2) -> s1.getId().compareTo(s2.getId()))
+
+        Sprint sprintAtiva = sprintRepository.findByTeamAndStatus(userTeam, Sprint.Status.ATIVA)
                 .orElse(null);
 
         if (sprintAtiva == null) {
