@@ -64,7 +64,6 @@
   <div th:unless="${totalEntries == 0}">
     <div th:each="sprint : ${allSprints}"
          th:with="sprintEntries=${entriesBySprintId.get(sprint.id)}"
-         th:if="${sprintEntries != null and !sprintEntries.isEmpty()}"
          style="margin-bottom:24px;">
 
       <div class="card">
