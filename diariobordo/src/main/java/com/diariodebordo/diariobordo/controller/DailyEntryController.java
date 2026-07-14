@@ -85,7 +85,7 @@ public class DailyEntryController {
             List<DailyEntry> registros = dailyEntryService.buscarFeedDoDia(user);
             Optional<DailyEntry> entryHoje = dailyEntryService.buscarRegistroDeHoje(user);
             boolean jaRegistrou = entryHoje.isPresent();
-            List<User> membrosAusentes = dailyEntryService.getMembrosAusentesHoje(user);
+            List<User> membrosAusentes = dailyEntryService.getMembrosAusentesHoje(user, registros);
 
             Sprint sprintAtiva = historyService.getSprintAtiva(user);
             long diasRestantes = 0;

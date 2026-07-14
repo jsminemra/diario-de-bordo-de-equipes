@@ -90,7 +90,7 @@ class HeatmapServiceTest {
         Team team = criarEquipe(1L, List.of(user));
         Sprint sprint = criarSprint(1L, team);
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint)).thenReturn(List.of());
 
@@ -110,7 +110,7 @@ class HeatmapServiceTest {
         LocalDate dataRegistro = hoje.minusDays(2);
         DailyEntry entry = criarEntrada(1L, user, sprint, dataRegistro, "Implementei a feature");
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint)).thenReturn(List.of(entry));
 
@@ -132,7 +132,7 @@ class HeatmapServiceTest {
     void deveRetornarHeatmapVazioQuandoUsuarioNaoPertenceANenhumaEquipe() {
         User user = criarUsuario(1L, "sem-equipe@test.com");
 
-        when(teamRepository.findAll()).thenReturn(List.of());
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of());
 
         List<HeatmapDataDTO> resultado = heatmapService.getHeatmapData(user, 7);
 
@@ -145,7 +145,7 @@ class HeatmapServiceTest {
         User user = criarUsuario(1L, "user@test.com");
         Team team = criarEquipe(1L, List.of(user));
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of());
 
         List<HeatmapDataDTO> resultado = heatmapService.getHeatmapData(user, 7);
@@ -164,7 +164,7 @@ class HeatmapServiceTest {
         String descricaoLonga = "Esta é uma descrição muito longa que definitivamente ultrapassa 30 caracteres";
         DailyEntry entry = criarEntrada(1L, user, sprint, hoje, descricaoLonga);
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint)).thenReturn(List.of(entry));
 
@@ -188,7 +188,7 @@ class HeatmapServiceTest {
         Sprint sprint = criarSprint(1L, team);
 
         // user2 tem registro hoje, mas o heatmap é de user1 que não tem
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user1.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user1, sprint)).thenReturn(List.of());
 
@@ -205,7 +205,7 @@ class HeatmapServiceTest {
         Team team = criarEquipe(1L, List.of(user));
         Sprint sprint = criarSprint(1L, team);
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint)).thenReturn(List.of());
 
@@ -223,7 +223,7 @@ class HeatmapServiceTest {
         LocalDate ontem = LocalDate.now().minusDays(1);
         DailyEntry entry = criarEntrada(1L, user, sprint, ontem, "Feature implementada");
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint)).thenReturn(List.of(entry));
 
