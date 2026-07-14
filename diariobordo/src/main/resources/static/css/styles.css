@@ -365,6 +365,11 @@ body { font-family: var(--font); color: var(--text); margin: 0; }
   gap: 14px;
   box-shadow: var(--shadow-sm);
 }
+.team-card-alert {
+  border-color: rgba(185,28,28,0.35);
+  border-left: 3px solid var(--danger);
+  background: rgba(185,28,28,0.03);
+}
 .team-card h3 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
 .team-card .team-stats { display: flex; align-items: baseline; gap: 8px; }
 .team-card .stat-big { font-family: var(--mono); font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }

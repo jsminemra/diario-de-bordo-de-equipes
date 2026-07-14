@@ -78,12 +78,15 @@
 
     <!-- ── Card de registro do usuário logado ── -->
     <div class="card" style="margin-bottom:24px;">
-      <div class="card-header">
+      <div id="card-registro-header" class="card-header">
         <div>
           <div class="card-title">Seu registro de hoje</div>
           <div class="card-subtitle">Preencha os três campos. Você pode editar até o fim do dia.</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
+          <span id="registro-confirm-toast" class="badge badge-success" style="display:none;">
+            <span class="dot"></span>Registro salvo!
+          </span>
           <span th:if="${jaRegistrou}" class="badge badge-success">
             <span class="dot"></span>Salvo
           </span>
@@ -92,18 +95,18 @@
           </span>
         </div>
       </div>
-      <div class="card-body">
-        <form method="post" th:action="@{/member/entry/create}">
+      <div id="card-registro-body" class="card-body">
+        <form id="form-registro-hoje" method="post" th:action="@{/member/entry/create}">
           <div class="field-row">
             <div class="input-group">
               <label class="input-label">O que fiz hoje</label>
-              <textarea class="textarea" name="whatWasDone" rows="4"
+              <textarea class="textarea" name="whatWasDone" rows="4" required
                         placeholder="Ex.: Implementei a tela X e cobri com testes…"
                         th:text="${entryHoje != null ? entryHoje.whatWasDone : ''}"></textarea>
             </div>
             <div class="input-group">
               <label class="input-label">O que farei amanhã</label>
-              <textarea class="textarea" name="whatWillBeDone" rows="4"
+              <textarea class="textarea" name="whatWillBeDone" rows="4" required
                         placeholder="Ex.: Refatorar o módulo Y e abrir PR…"
                         th:text="${entryHoje != null ? entryHoje.whatWillBeDone : ''}"></textarea>
             </div>
@@ -129,7 +132,7 @@
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:32px 0 14px;">
       <div>
         <h2 class="h2" style="margin:0;">Hoje na equipe</h2>
-        <p class="muted" style="margin:4px 0 0;font-size:13px;">
+        <p id="feed-summary-text" class="muted" style="margin:4px 0 0;font-size:13px;">
           <span th:text="${registros.size()}"></span> de
           <span th:text="${registros.size() + membrosAusentes.size()}"></span>
           membros já registraram.
@@ -209,18 +212,49 @@
 
 <script>
   /* auto-refresh do feed a cada 30 s */
+  var partialIds = ['section-feed-registros', 'feed-summary-text', 'card-registro-header', 'card-registro-body'];
+
+  function applyPartials(html) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    partialIds.forEach(function (id) {
+      var fresh = doc.getElementById(id);
+      var current = document.getElementById(id);
+      if (fresh && current) current.innerHTML = fresh.innerHTML;
+    });
+  }
+
   function refreshFeed() {
     fetch(window.location.href, { credentials: 'same-origin' })
       .then(function (r) { if (r.redirected) return; return r.text(); })
-      .then(function (html) {
-        if (!html) return;
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        var nf = doc.getElementById('section-feed-registros');
-        if (nf) document.getElementById('section-feed-registros').innerHTML = nf.innerHTML;
-      })
+      .then(function (html) { if (html) applyPartials(html); })
       .catch(function () {});
   }
   setInterval(refreshFeed, 30000);
+
+  /* envio do registro diário sem recarregar a página inteira (DA-01/84) */
+  document.addEventListener('submit', function (e) {
+    if (e.target.id !== 'form-registro-hoje') return;
+    e.preventDefault();
+
+    var form = e.target;
+    var formData = new URLSearchParams(new FormData(form));
+
+    fetch(form.action, { method: 'POST', credentials: 'same-origin', body: formData })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        applyPartials(html);
+
+        var toast = document.getElementById('registro-confirm-toast');
+        if (toast) {
+          toast.style.display = 'inline-flex';
+          setTimeout(function () { toast.style.display = 'none'; }, 2500);
+        }
+      })
+      .catch(function () {
+        /* qualquer falha na chamada AJAX: usa o envio nativo do formulário como fallback */
+        form.submit();
+      });
+  });
 </script>
 
 </body>
