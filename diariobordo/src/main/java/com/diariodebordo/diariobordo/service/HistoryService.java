@@ -90,10 +90,7 @@ public class HistoryService {
     }
 
     private Team getUserTeam(User user) {
-        List<Team> teams = teamRepository.findAll().stream()
-                .filter(t -> t.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId())))
-                .toList();
-        
+        List<Team> teams = teamRepository.findByMemberId(user.getId());
         if (teams.isEmpty()) {
             return null;
         }

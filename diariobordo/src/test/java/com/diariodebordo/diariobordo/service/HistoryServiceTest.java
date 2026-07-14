@@ -91,7 +91,7 @@ class HistoryServiceTest {
         DailyEntry e2 = criarEntrada(2L, user, sprint, hoje.minusDays(1));
         DailyEntry e3 = criarEntrada(3L, user, sprint, hoje.minusDays(3));
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint))
                 .thenReturn(List.of(e1, e2, e3));
@@ -108,7 +108,7 @@ class HistoryServiceTest {
     void deveRetornarListaVaziaQuandoUsuarioSemEquipe() {
         User user = criarUsuario(1L, "sem-equipe@test.com");
 
-        when(teamRepository.findAll()).thenReturn(List.of());
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of());
 
         List<DailyEntry> resultado = historyService.getUserHistory(user, null, null);
 
@@ -129,7 +129,7 @@ class HistoryServiceTest {
         DailyEntry antesRange  = criarEntrada(2L, user, sprint, hoje.minusDays(15));
         DailyEntry depoisRange = criarEntrada(3L, user, sprint, hoje.minusDays(2));
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint))
                 .thenReturn(List.of(dentroRange, antesRange, depoisRange));
@@ -151,7 +151,7 @@ class HistoryServiceTest {
         // Repositório retorna apenas entradas de user1 quando consultado com user1
         DailyEntry entradaUser1 = criarEntrada(1L, user1, sprint, hoje);
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user1.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user1, sprint))
                 .thenReturn(List.of(entradaUser1));
@@ -172,7 +172,7 @@ class HistoryServiceTest {
         DailyEntry recente   = criarEntrada(1L, user, sprint, hoje.minusDays(10));
         DailyEntry antigo    = criarEntrada(2L, user, sprint, hoje.minusDays(35));
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprint));
         when(dailyEntryRepository.findByUserAndSprint(user, sprint))
                 .thenReturn(List.of(recente, antigo));
@@ -191,7 +191,7 @@ class HistoryServiceTest {
         Team team = criarEquipe(1L, List.of(user));
         Sprint sprintAtiva = criarSprint(1L, team, Sprint.Status.ATIVA);
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeamAndStatus(team, Sprint.Status.ATIVA))
                 .thenReturn(Optional.of(sprintAtiva));
 
@@ -207,7 +207,7 @@ class HistoryServiceTest {
         User user = criarUsuario(1L, "user@test.com");
         Team team = criarEquipe(1L, List.of(user));
 
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of(team));
         when(sprintRepository.findByTeamAndStatus(team, Sprint.Status.ATIVA))
                 .thenReturn(Optional.empty());
 
@@ -220,7 +220,7 @@ class HistoryServiceTest {
     void getSprintAtiva_deveRetornarNullQuandoUsuarioSemEquipe() {
         User user = criarUsuario(1L, "sem-equipe@test.com");
 
-        when(teamRepository.findAll()).thenReturn(List.of());
+        when(teamRepository.findByMemberId(user.getId())).thenReturn(List.of());
 
         Sprint resultado = historyService.getSprintAtiva(user);
 
