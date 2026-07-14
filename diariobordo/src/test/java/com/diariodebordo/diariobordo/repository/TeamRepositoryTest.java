@@ -27,7 +27,7 @@ class TeamRepositoryTest {
     void setUp() {
         leader = new User();
         leader.setEmail("lider@email.com");
-        leader.setPassword("senha123");
+        leader.setPassword("$2a$10$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq");
         leader.setName("Líder da Equipe");
         leader.setRole(User.Role.LEADER);
         em.persistAndFlush(leader);
