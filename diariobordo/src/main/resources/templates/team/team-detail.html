@@ -291,10 +291,10 @@
     </div>
     <div class="modal-footer">
       <button id="btn-cancelar-encerrar" type="button" class="btn btn-ghost">Cancelar</button>
-      <form th:if="${sprintAtiva != null}"
+      <form id="form-encerrar-sprint" th:if="${sprintAtiva != null}"
             th:action="@{/leader/team/{id}/sprint/close(id=${team.id})}" method="post"
             style="display:inline;">
-        <button id="btn-confirmar-encerrar" type="submit" class="btn btn-danger" disabled>Encerrar sprint</button>
+        <button id="btn-confirmar-encerrar" type="submit" class="btn btn-danger" disabled>Confirmar encerramento</button>
       </form>
     </div>
   </div>

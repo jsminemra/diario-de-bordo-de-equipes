@@ -454,8 +454,8 @@ public class TeamController {
             if (sprint != null) {
                 sprint.setStatus(Sprint.Status.ENCERRADA);
                 sprintRepository.save(sprint);
-                sprintReportService.generateAndSave(sprint, team);
-                redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada e relatório gerado com sucesso!");
+                sprintReportService.generateAndSaveAsync(sprint, team);
+                redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada! O relatório está sendo gerado e estará disponível em instantes.");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
             }
@@ -463,6 +463,30 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/leader/team/" + teamId;
+    }
+
+    @PostMapping("/team/{teamId}/sprint/{sprintId}/report/generate")
+    public String regenerateSprintReport(@PathVariable Long teamId,
+                                         @PathVariable Long sprintId,
+                                         Authentication auth,
+                                         RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            Team team = teamService.getTeamWithMembers(teamId);
+            if (!team.getLeader().getId().equals(leader.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para gerar este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
+            Sprint sprint = sprintRepository.findById(sprintId)
+                    .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+
+            sprintReportService.generateAndSave(sprint, team);
+            redirectAttributes.addFlashAttribute("success", "Relatório gerado com sucesso!");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", "Não foi possível gerar o relatório: " + e.getMessage());
+        }
+        return "redirect:/leader/team/" + teamId + "/sprint/" + sprintId + "/report";
     }
 
     private User getAuthenticatedUser(Authentication auth) {
