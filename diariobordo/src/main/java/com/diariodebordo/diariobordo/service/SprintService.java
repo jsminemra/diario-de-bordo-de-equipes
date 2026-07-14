@@ -30,7 +30,7 @@ public class SprintService {
             throw new RuntimeException("Já existe uma sprint ativa para esta equipe. Encerre-a antes de criar uma nova.");
         }
 
-        if (dto.getEndDate().isBefore(dto.getStartDate())) {
+        if (!dto.getEndDate().isAfter(dto.getStartDate())) {
             throw new RuntimeException("A data de fim deve ser posterior à data de início.");
         }
 

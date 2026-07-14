@@ -29,7 +29,16 @@
 
   /* ── Encerrar Sprint ─────────────────────────────────────────────────── */
   var btnEnd = document.getElementById('btn-encerrar-sprint');
-  if (btnEnd) btnEnd.addEventListener('click', function () { openModal('modal-encerrar'); });
+  var btnConfirmEnd = document.getElementById('btn-confirmar-encerrar');
+  if (btnEnd) {
+    btnEnd.addEventListener('click', function () {
+      openModal('modal-encerrar');
+      if (btnConfirmEnd) {
+        btnConfirmEnd.disabled = true;
+        setTimeout(function () { btnConfirmEnd.disabled = false; }, 2000);
+      }
+    });
+  }
 
   var btnCancelEnd = document.getElementById('btn-cancelar-encerrar');
   if (btnCancelEnd) btnCancelEnd.addEventListener('click', function () { closeModal('modal-encerrar'); });
