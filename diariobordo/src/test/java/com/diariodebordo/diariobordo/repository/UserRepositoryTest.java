@@ -27,7 +27,7 @@ class UserRepositoryTest {
     void setUp() {
         user = new User();
         user.setEmail("joao@email.com");
-        user.setPassword("senha123");
+        user.setPassword("$2a$10$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq");
         user.setName("João Silva");
         user.setRole(User.Role.MEMBER);
     }
@@ -56,7 +56,7 @@ class UserRepositoryTest {
 
         User duplicado = new User();
         duplicado.setEmail("joao@email.com");
-        duplicado.setPassword("outrasenha");
+        duplicado.setPassword("$2a$10$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq");
         duplicado.setName("João Duplicado");
         duplicado.setRole(User.Role.LEADER);
 
