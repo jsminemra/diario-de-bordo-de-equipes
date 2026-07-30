@@ -99,10 +99,7 @@ public class HeatmapService {
     }
 
     private Team getUserTeam(User user) {
-        return teamRepository.findAll().stream()
-                .filter(t -> t.getMembers().stream()
-                        .anyMatch(m -> m.getId().equals(user.getId())))
-                .findFirst()
-                .orElse(null);
+        List<Team> teams = teamRepository.findByMemberId(user.getId());
+        return teams.isEmpty() ? null : teams.get(0);
     }
 }

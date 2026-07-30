@@ -90,7 +90,7 @@ class AuthControllerTest {
         team.setMembers(members);
 
         when(userRepository.findByEmail("membro@email.com")).thenReturn(Optional.of(user));
-        when(teamRepository.findAll()).thenReturn(List.of(team));
+        when(teamRepository.findByMemberId(1L)).thenReturn(List.of(team));
 
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection())

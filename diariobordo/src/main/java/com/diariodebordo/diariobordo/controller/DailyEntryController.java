@@ -3,10 +3,14 @@ package com.diariodebordo.diariobordo.controller;
 import com.diariodebordo.diariobordo.dto.DailyEntryDTO;
 import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
+import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -15,17 +19,22 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/member")
@@ -35,6 +44,9 @@ public class DailyEntryController {
     private final DailyEntryService dailyEntryService;
     private final UserRepository userRepository;
     private final HistoryService historyService;
+    private final SprintRepository sprintRepository;
+    private final DailyEntryRepository dailyEntryRepository;
+    private final SprintReportService sprintReportService;
 
     @GetMapping("/entry/create")
     public String exibirFormulario(Model model, Authentication auth) {
@@ -85,7 +97,7 @@ public class DailyEntryController {
             List<DailyEntry> registros = dailyEntryService.buscarFeedDoDia(user);
             Optional<DailyEntry> entryHoje = dailyEntryService.buscarRegistroDeHoje(user);
             boolean jaRegistrou = entryHoje.isPresent();
-            List<User> membrosAusentes = dailyEntryService.getMembrosAusentesHoje(user);
+            List<User> membrosAusentes = dailyEntryService.getMembrosAusentesHoje(user, registros);
 
             Sprint sprintAtiva = historyService.getSprintAtiva(user);
             long diasRestantes = 0;
@@ -154,5 +166,56 @@ public class DailyEntryController {
         model.addAttribute("usuario", user);
 
         return "member/history";
+    }
+
+    @GetMapping("/sprint/{sprintId}/report")
+    public String visualizarRelatorio(@PathVariable Long sprintId,
+                                      Authentication auth,
+                                      Model model,
+                                      RedirectAttributes redirectAttributes) {
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        Sprint sprint = sprintRepository.findById(sprintId).orElse(null);
+        if (sprint == null) {
+            redirectAttributes.addFlashAttribute("error", "Sprint não encontrada");
+            return "redirect:/member/history";
+        }
+
+        Team team = sprint.getTeam();
+        boolean pertenceAEquipe = team.getMembers().stream()
+                .anyMatch(m -> m.getId().equals(user.getId()));
+        if (!pertenceAEquipe) {
+            redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver este relatório");
+            return "redirect:/member/history";
+        }
+
+        List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint).stream()
+                .sorted(Comparator.comparing(DailyEntry::getEntryDate))
+                .toList();
+
+        Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
+                .collect(Collectors.groupingBy(e -> e.getUser().getId()));
+
+        long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+        long diasUteis = diasUteisNoPeriodo(sprint.getStartDate(), sprint.getEndDate());
+
+        model.addAttribute("team", team);
+        model.addAttribute("sprint", sprint);
+        model.addAttribute("entries", entries);
+        model.addAttribute("entriesByMember", entriesByMember);
+        model.addAttribute("totalDays", totalDays);
+        model.addAttribute("diasUteis", diasUteis);
+        model.addAttribute("backUrl", "/member/history");
+        model.addAttribute("canExportPdf", false);
+        model.addAttribute("sprintReport", sprintReportService.findBySprint(sprint).orElse(null));
+
+        return "report";
+    }
+
+    private long diasUteisNoPeriodo(LocalDate inicio, LocalDate fim) {
+        return inicio.datesUntil(fim.plusDays(1))
+                .filter(d -> d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY)
+                .count();
     }
 }

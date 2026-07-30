@@ -43,6 +43,16 @@
   var btnCancelEnd = document.getElementById('btn-cancelar-encerrar');
   if (btnCancelEnd) btnCancelEnd.addEventListener('click', function () { closeModal('modal-encerrar'); });
 
+  var formEncerrar = document.getElementById('form-encerrar-sprint');
+  if (formEncerrar) {
+    formEncerrar.addEventListener('submit', function () {
+      if (btnConfirmEnd) {
+        btnConfirmEnd.disabled = true;
+        btnConfirmEnd.textContent = 'Encerrando…';
+      }
+    });
+  }
+
   /* ── Excluir Equipe ──────────────────────────────────────────────────── */
   document.querySelectorAll('.btn-excluir-equipe').forEach(function (btn) {
     btn.addEventListener('click', function () {

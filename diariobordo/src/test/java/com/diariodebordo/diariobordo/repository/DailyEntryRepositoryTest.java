@@ -31,14 +31,14 @@ class DailyEntryRepositoryTest {
     void setUp() {
         User leader = new User();
         leader.setEmail("lider@email.com");
-        leader.setPassword("senha123");
+        leader.setPassword("$2a$10$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq");
         leader.setName("Líder");
         leader.setRole(User.Role.LEADER);
         em.persistAndFlush(leader);
 
         member = new User();
         member.setEmail("membro@email.com");
-        member.setPassword("senha123");
+        member.setPassword("$2a$10$0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq");
         member.setName("Membro");
         member.setRole(User.Role.MEMBER);
         em.persistAndFlush(member);

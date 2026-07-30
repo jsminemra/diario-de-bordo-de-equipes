@@ -4,10 +4,13 @@ import com.diariodebordo.diariobordo.config.SecurityConfig;
 import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -46,12 +49,21 @@ class DailyEntryControllerTest {
     private HistoryService historyService;
 
     @MockitoBean
+    private SprintRepository sprintRepository;
+
+    @MockitoBean
+    private DailyEntryRepository dailyEntryRepository;
+
+    @MockitoBean
+    private SprintReportService sprintReportService;
+
+    @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
     // ─── GET /member/history ─────────────────────────────────────────────────
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_deveRetornarStatus200EViewHistory() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -65,7 +77,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_devePassarHistoryEUsuarioAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
         DailyEntry entry = criarEntrada(user);
@@ -86,7 +98,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_comFiltroDeData_deveUsarDatasInformadasComoParametros() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -110,7 +122,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_semSprintAtiva_deveUsarJanelaDe30DiasComoDefault() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -125,7 +137,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getHistory_comSprintAtiva_deveUsarDatasDeSprintComoDefault() throws Exception {
         User user = criarUsuario("membro@test.com");
         Sprint sprint = criarSprintAtiva();
@@ -143,7 +155,7 @@ class DailyEntryControllerTest {
     // ─── GET /member/feed ────────────────────────────────────────────────────
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getFeed_devePassarMembrosAusentesAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
 
@@ -159,7 +171,7 @@ class DailyEntryControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "membro@test.com")
+    @WithMockUser(username = "membro@test.com", roles = "MEMBER")
     void getFeed_devePassarEntryHojeAoModelo() throws Exception {
         User user = criarUsuario("membro@test.com");
         DailyEntry entryHoje = criarEntrada(user);

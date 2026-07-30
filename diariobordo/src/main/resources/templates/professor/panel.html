@@ -75,9 +75,13 @@
     <div th:each="team, iterStat : ${teams}"
          th:with="progress=${teamProgressList[iterStat.index]},
                   registradosHoje=${registradosHojeMap != null ? registradosHojeMap.get(team.id) : 0},
-                  pct=${#numbers.formatDecimal(progress.progressPercentage,1,0)},
-                  barCls=${progress.progressPercentage >= 100 ? 'full' : (progress.progressPercentage < 50 ? 'low' : '')}"
-         class="team-card">
+                  totalMembros=${team.members.size()},
+                  temAusentes=${progress.currentSprintName != null and registradosHoje < totalMembros},
+                  hojePctRaw=${totalMembros > 0 ? (registradosHoje * 100.0 / totalMembros) : 0},
+                  hojePct=${#numbers.formatDecimal(hojePctRaw,1,0)},
+                  barCls=${hojePctRaw >= 100 ? 'full' : (hojePctRaw < 50 ? 'low' : '')}"
+         class="team-card"
+         th:classappend="${temAusentes} ? 'team-card-alert' : ''">
 
       <!-- header: nome + sprint name + badge -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -88,10 +92,13 @@
             <span th:unless="${progress.currentSprintName != null}">Sem sprint ativa</span>
           </div>
         </div>
-        <span th:if="${progress.currentSprintName != null}" class="badge badge-primary">
+        <span th:if="${temAusentes}" class="badge badge-danger" title="Há membros que ainda não registraram hoje">
+          <span class="dot"></span>Ausências hoje
+        </span>
+        <span th:if="${!temAusentes and progress.currentSprintName != null}" class="badge badge-primary">
           <span class="dot"></span>Ativa
         </span>
-        <span th:unless="${progress.currentSprintName != null}" class="badge badge-neutral">
+        <span th:if="${progress.currentSprintName == null}" class="badge badge-neutral">
           Encerrada
         </span>
       </div>
@@ -121,7 +128,7 @@
           <div class="progress">
             <div class="progress-bar"
                  th:classappend="${barCls}"
-                 th:style="'width:' + ${pct} + '%'"></div>
+                 th:style="'width:' + ${hojePct} + '%'"></div>
           </div>
         </div>
       </div>

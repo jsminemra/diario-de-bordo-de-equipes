@@ -83,7 +83,17 @@ public class DailyEntryService {
         Team userTeam = getUserTeam(user);
         if (userTeam == null) return List.of();
 
-        List<DailyEntry> registrosHoje = buscarFeedDoDia(user);
+        return getMembrosAusentesHoje(user, buscarFeedDoDia(user));
+    }
+
+    /**
+     * Variante que reaproveita registros já buscados pelo chamador
+     * (evita repetir a mesma consulta ao carregar o feed do dia).
+     */
+    public List<User> getMembrosAusentesHoje(User user, List<DailyEntry> registrosHoje) {
+        Team userTeam = getUserTeam(user);
+        if (userTeam == null) return List.of();
+
         Set<Long> idsComRegistro = registrosHoje.stream()
                 .map(e -> e.getUser().getId())
                 .collect(Collectors.toSet());
@@ -94,10 +104,7 @@ public class DailyEntryService {
     }
 
     private Team getUserTeam(User user) {
-        List<Team> teams = teamRepository.findAll().stream()
-                .filter(t -> t.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId())))
-                .toList();
-        
+        List<Team> teams = teamRepository.findByMemberId(user.getId());
         if (teams.isEmpty()) {
             return null;
         }
