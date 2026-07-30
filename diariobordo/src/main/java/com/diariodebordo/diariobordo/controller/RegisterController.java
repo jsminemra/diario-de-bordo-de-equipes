@@ -3,11 +3,16 @@ package com.diariodebordo.diariobordo.controller;
 import com.diariodebordo.diariobordo.dto.RegisterDTO;
 import com.diariodebordo.diariobordo.model.User;
 import com.diariodebordo.diariobordo.service.RegisterService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,6 +26,7 @@ public class RegisterController {
 
     private final RegisterService registerService;
     private final AuthenticationManager authenticationManager;
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public RegisterController(RegisterService registerService, AuthenticationManager authenticationManager) {
         this.registerService = registerService;
@@ -42,20 +48,26 @@ public class RegisterController {
     public String register(@Valid @ModelAttribute("registerDTO") RegisterDTO dto,
                            BindingResult result,
                            Model model,
-                           RedirectAttributes redirectAttributes) {
-        
+                           RedirectAttributes redirectAttributes,
+                           HttpServletRequest request,
+                           HttpServletResponse response) {
+
         if (result.hasErrors()) {
             return "register";
         }
 
         try {
             User newUser = registerService.register(dto);
-            
-            UsernamePasswordAuthenticationToken authToken = 
+
+            UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword());
             Authentication authentication = authenticationManager.authenticate(authToken);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            securityContextRepository.saveContext(context, request, response);
+
             redirectAttributes.addFlashAttribute("success", "Cadastro realizado com sucesso! Bem-vindo(a), " + newUser.getName() + "!");
             return "redirect:/dashboard";
             
