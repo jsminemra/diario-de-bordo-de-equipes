@@ -31,17 +31,25 @@
     .badge-primary { background: #DCEAFB; color: #185FA5; }
     .badge-neutral { background: #F1F5F9; color: #475569; }
 
-    .member-section { margin-top: 22px; page-break-inside: avoid; }
-    table.member-header { width: 100%; border-collapse: collapse; background: #F8FAFC; border: 0.5px solid #E2E8F0; }
+    /* Nota sobre paginação (Risco RF-13b — volume máximo de registros):
+       tabelas com células muito altas (ex.: uma célula por campo, cada uma
+       com dezenas de itens de lista) não quebram de página de forma
+       confiável no OpenHTMLtoPDF — o cabeçalho da coluna pode se perder
+       quando o conteúdo da célula ultrapassa o limite da página. Por isso
+       a seção de síntese usa blocos empilhados (não tabela), e nada aqui
+       usa page-break-inside:avoid em um contêiner que pode crescer sem
+       limite — só o cabeçalho do membro (pequeno e fixo) é protegido. */
+    .member-section { margin-top: 22px; }
+    table.member-header { width: 100%; border-collapse: collapse; background: #F8FAFC; border: 0.5px solid #E2E8F0; page-break-inside: avoid; }
     table.member-header td { padding: 8px 10px; vertical-align: middle; }
     .member-name { font-weight: bold; font-size: 12px; color: #0F172A; }
     .member-email { font-size: 9px; color: #94A3B8; }
     .member-count { font-size: 9px; color: #475569; text-align: right; }
 
     .synthesis { margin-top: 8px; border: 0.5px solid #E2E8F0; padding: 8px 10px; }
-    .synthesis-title { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 6px; }
-    table.synthesis-grid { width: 100%; border-collapse: collapse; }
-    table.synthesis-grid > tbody > tr > td { width: 33%; vertical-align: top; padding-right: 10px; }
+    .synthesis-title { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 8px; }
+    .synthesis-field { margin-bottom: 10px; }
+    .synthesis-field:last-child { margin-bottom: 0; }
     .field-label { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: #94A3B8; margin-bottom: 4px; }
     ul.field-list { margin: 0; padding-left: 14px; }
     ul.field-list li { margin-bottom: 3px; font-size: 10px; }
@@ -119,40 +127,39 @@
 
     <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="synthesis">
       <div class="synthesis-title">Síntese da sprint</div>
-      <table class="synthesis-grid">
-        <tr>
-          <td>
-            <div class="field-label">O que foi feito</div>
-            <ul class="field-list">
-              <li th:each="entry : ${memberEntries}">
-                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
-                <span th:text="${entry.whatWasDone}"></span>
-              </li>
-            </ul>
-          </td>
-          <td>
-            <div class="field-label">O que foi planejado</div>
-            <ul class="field-list">
-              <li th:each="entry : ${memberEntries}">
-                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
-                <span th:text="${entry.whatWillBeDone}"></span>
-              </li>
-            </ul>
-          </td>
-          <td>
-            <div class="field-label">Impedimentos</div>
-            <ul class="field-list" th:if="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}">
-              <li th:each="entry : ${memberEntries}" th:if="${entry.impediments != null and !entry.impediments.isEmpty()}">
-                <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
-                <span th:text="${entry.impediments}"></span>
-              </li>
-            </ul>
-            <p th:unless="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}" class="empty-note" style="padding:0;">
-              Nenhum impedimento registrado.
-            </p>
-          </td>
-        </tr>
-      </table>
+
+      <div class="synthesis-field">
+        <div class="field-label">O que foi feito</div>
+        <ul class="field-list">
+          <li th:each="entry : ${memberEntries}">
+            <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+            <span th:text="${entry.whatWasDone}"></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="synthesis-field">
+        <div class="field-label">O que foi planejado</div>
+        <ul class="field-list">
+          <li th:each="entry : ${memberEntries}">
+            <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+            <span th:text="${entry.whatWillBeDone}"></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="synthesis-field">
+        <div class="field-label">Impedimentos</div>
+        <ul class="field-list" th:if="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}">
+          <li th:each="entry : ${memberEntries}" th:if="${entry.impediments != null and !entry.impediments.isEmpty()}">
+            <span class="entry-date" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+            <span th:text="${entry.impediments}"></span>
+          </li>
+        </ul>
+        <p th:unless="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}" class="empty-note" style="padding:0;">
+          Nenhum impedimento registrado.
+        </p>
+      </div>
     </div>
   </div>
 </div>
