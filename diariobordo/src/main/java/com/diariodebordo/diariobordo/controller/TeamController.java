@@ -417,6 +417,11 @@ public class TeamController {
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
 
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
             List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
 
             Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
@@ -482,6 +487,11 @@ public class TeamController {
 
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para gerar este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
 
             sprintReportService.generateAndSave(sprint, team);
             redirectAttributes.addFlashAttribute("success", "Relatório gerado com sucesso!");
