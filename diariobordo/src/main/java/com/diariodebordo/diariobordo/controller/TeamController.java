@@ -461,7 +461,7 @@ public class TeamController {
             if (sprint != null) {
                 sprint.setStatus(Sprint.Status.ENCERRADA);
                 sprintRepository.save(sprint);
-                sprintReportService.generateAndSaveAsync(sprint, team);
+                sprintReportService.generateAndSaveAsync(sprint.getId());
                 redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada! O relatório está sendo gerado e estará disponível em instantes.");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
