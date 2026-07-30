@@ -416,6 +416,11 @@ public class TeamController {
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
 
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Sprint não encontrada para esta equipe");
+                return "redirect:/leader/team/" + teamId;
+            }
+
             List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
 
             Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
@@ -454,7 +459,7 @@ public class TeamController {
             if (sprint != null) {
                 sprint.setStatus(Sprint.Status.ENCERRADA);
                 sprintRepository.save(sprint);
-                sprintReportService.generateAndSaveAsync(sprint, team);
+                sprintReportService.generateAndSaveAsync(sprint.getId());
                 redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada! O relatório está sendo gerado e estará disponível em instantes.");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
@@ -480,6 +485,11 @@ public class TeamController {
 
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Sprint não encontrada para esta equipe");
+                return "redirect:/leader/team/" + teamId;
+            }
 
             sprintReportService.generateAndSave(sprint, team);
             redirectAttributes.addFlashAttribute("success", "Relatório gerado com sucesso!");
