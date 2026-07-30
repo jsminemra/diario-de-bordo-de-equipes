@@ -18,10 +18,16 @@
     </span>
   </div>
   <div style="display:flex;gap:8px;">
-    <button onclick="window.print()" class="btn btn-primary btn-sm">
+    <button onclick="window.print()" class="btn btn-ghost btn-sm">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Imprimir / Salvar PDF
+      Imprimir
     </button>
+    <a th:if="${canExportPdf == true and team != null and sprint != null}"
+       th:href="@{/leader/team/{teamId}/sprint/{sprintId}/report/pdf(teamId=${team.id}, sprintId=${sprint.id})}"
+       class="btn btn-primary btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar PDF
+    </a>
   </div>
 </div>
 
@@ -182,28 +188,33 @@
           </div>
         </div>
 
-        <!-- Detalhamento por dia -->
+        <!-- Detalhamento por dia — em contêiner com scroll controlado quando o
+             volume de registros é grande (Risco RF-13b), pra não deixar a
+             página inteira gigante. Sem efeito na impressão/PDF: @media print
+             abaixo remove o limite de altura pra sair tudo no papel. -->
         <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="label" style="margin:18px 0 4px;">Detalhamento por dia</div>
-        <div th:each="entry : ${memberEntries}" class="report-entry">
-          <div class="report-entry-date">
-            <span class="mono" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
-            <span style="font-size:10px;color:var(--text-3);text-transform:uppercase;"
-                  th:text="${#temporals.format(entry.entryDate,'EEE')}"></span>
-          </div>
-          <div class="report-entry-body">
-            <div class="feed-cell">
-              <span class="label">O que fiz</span>
-              <p style="margin:4px 0 0;" th:text="${entry.whatWasDone}"></p>
+        <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="report-day-list">
+          <div th:each="entry : ${memberEntries}" class="report-entry">
+            <div class="report-entry-date">
+              <span class="mono" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+              <span style="font-size:10px;color:var(--text-3);text-transform:uppercase;"
+                    th:text="${#temporals.format(entry.entryDate,'EEE')}"></span>
             </div>
-            <div class="feed-cell">
-              <span class="label">O que farei</span>
-              <p style="margin:4px 0 0;" th:text="${entry.whatWillBeDone}"></p>
-            </div>
-            <div class="feed-cell">
-              <span class="label">Impedimentos</span>
-              <p style="margin:4px 0 0;"
-                 th:text="${(entry.impediments != null and !entry.impediments.isEmpty()) ? entry.impediments : 'Nenhum.'}"
-                 th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
+            <div class="report-entry-body">
+              <div class="feed-cell">
+                <span class="label">O que fiz</span>
+                <p style="margin:4px 0 0;" th:text="${entry.whatWasDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">O que farei</span>
+                <p style="margin:4px 0 0;" th:text="${entry.whatWillBeDone}"></p>
+              </div>
+              <div class="feed-cell">
+                <span class="label">Impedimentos</span>
+                <p style="margin:4px 0 0;"
+                   th:text="${(entry.impediments != null and !entry.impediments.isEmpty()) ? entry.impediments : 'Nenhum.'}"
+                   th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
+              </div>
             </div>
           </div>
         </div>
@@ -284,6 +295,24 @@
     color: var(--text);
   }
 
+  /* Scroll controlado (Risco RF-13b): sprints com muitos registros não
+     devem transformar a página num scroll infinito único — cada lista
+     da síntese e o detalhamento por dia ficam contidos, com rolagem
+     própria, quando ultrapassam a altura definida. */
+  .report-synthesis-grid ul {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .report-day-list {
+    max-height: 640px;
+    overflow-y: auto;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0 12px;
+  }
+
   .report-entry {
     display: grid;
     grid-template-columns: 48px 1fr;
@@ -325,6 +354,16 @@
     .report-member-section { break-inside: avoid; }
     .report-synthesis { break-inside: avoid; }
     .report-entry { break-inside: avoid; }
+
+    /* Na impressão/exportação via navegador, o conteúdo deve sair
+       inteiro no papel — o scroll controlado é só uma conveniência
+       de leitura na tela. */
+    .report-synthesis-grid ul, .report-day-list {
+      max-height: none;
+      overflow: visible;
+      border: none;
+      padding: 0;
+    }
   }
 </style>
 
