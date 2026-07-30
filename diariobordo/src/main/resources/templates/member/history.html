@@ -81,12 +81,20 @@
               <span th:unless="${sprintEntries.size() == 1}"> registros</span>
             </div>
           </div>
-          <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
-            <span class="dot"></span>Ativa
-          </span>
-          <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
-            Encerrada
-          </span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
+              <span class="dot"></span>Ativa
+            </span>
+            <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
+              Encerrada
+            </span>
+            <a th:unless="${sprint.status.name() == 'ATIVA'}"
+               th:href="@{/member/sprint/{sprintId}/report(sprintId=${sprint.id})}"
+               class="btn btn-ghost btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ver relatório
+            </a>
+          </div>
         </div>
 
         <!-- Entries -->

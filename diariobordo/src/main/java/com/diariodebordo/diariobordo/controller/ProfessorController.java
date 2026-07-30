@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -185,18 +186,24 @@ public class ProfessorController {
         Sprint sprint = sprintRepository.findById(sprintId)
                 .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
 
+        if (!sprint.getTeam().getId().equals(teamId)) {
+            throw new RuntimeException("Sprint não encontrada");
+        }
+
         List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
 
         Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
                 .collect(Collectors.groupingBy(e -> e.getUser().getId()));
 
         long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+        long diasUteis = diasUteisNoPeriodo(sprint.getStartDate(), sprint.getEndDate());
 
         model.addAttribute("team", team);
         model.addAttribute("sprint", sprint);
         model.addAttribute("entries", entries);
         model.addAttribute("entriesByMember", entriesByMember);
         model.addAttribute("totalDays", totalDays);
+        model.addAttribute("diasUteis", diasUteis);
         model.addAttribute("backUrl", "/professor/team/" + teamId);
         model.addAttribute("sprintReport",
                 sprintReportService.findBySprint(sprint).orElse(null));
@@ -350,8 +357,14 @@ public class ProfessorController {
                 }
             }
         } catch (Exception e) {
-            
+
         }
         return 0;
+    }
+
+    private long diasUteisNoPeriodo(LocalDate inicio, LocalDate fim) {
+        return inicio.datesUntil(fim.plusDays(1))
+                .filter(d -> d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY)
+                .count();
     }
 }

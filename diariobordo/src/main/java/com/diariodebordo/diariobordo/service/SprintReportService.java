@@ -6,6 +6,7 @@ import com.diariodebordo.diariobordo.model.SprintReport;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintReportRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -24,11 +25,14 @@ public class SprintReportService {
 
     private final SprintReportRepository sprintReportRepository;
     private final DailyEntryRepository dailyEntryRepository;
+    private final SprintRepository sprintRepository;
 
     public SprintReportService(SprintReportRepository sprintReportRepository,
-                               DailyEntryRepository dailyEntryRepository) {
+                               DailyEntryRepository dailyEntryRepository,
+                               SprintRepository sprintRepository) {
         this.sprintReportRepository = sprintReportRepository;
         this.dailyEntryRepository = dailyEntryRepository;
+        this.sprintRepository = sprintRepository;
     }
 
     @Transactional
@@ -78,13 +82,23 @@ public class SprintReportService {
      * encerramento da sprint. Falhas ficam registradas em log; o líder pode
      * disparar uma nova tentativa síncrona via generateAndSave se o
      * relatório não aparecer.
+     *
+     * Recebe só o ID da sprint (não a entidade) e busca tudo de novo aqui
+     * dentro: a thread do @Async não tem a sessão Hibernate da requisição
+     * original, então usar entidades carregadas em outra thread (como
+     * team.getMembers(), que é @ManyToMany preguiçoso) lança
+     * LazyInitializationException. Buscando de novo dentro da transação
+     * própria deste método, tudo fica corretamente anexado à sessão.
      */
     @Async
-    public void generateAndSaveAsync(Sprint sprint, Team team) {
+    @Transactional
+    public void generateAndSaveAsync(Long sprintId) {
         try {
-            generateAndSave(sprint, team);
+            Sprint sprint = sprintRepository.findById(sprintId)
+                    .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
+            generateAndSave(sprint, sprint.getTeam());
         } catch (Exception e) {
-            log.error("Falha ao gerar relatório para a sprint {}: {}", sprint.getId(), e.getMessage(), e);
+            log.error("Falha ao gerar relatório para a sprint {}: {}", sprintId, e.getMessage(), e);
         }
     }
 }

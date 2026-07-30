@@ -24,6 +24,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -379,12 +380,16 @@ public class TeamController {
             long totalDays = sprint != null
                     ? ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1
                     : 0;
+            long diasUteis = sprint != null
+                    ? diasUteisNoPeriodo(sprint.getStartDate(), sprint.getEndDate())
+                    : 0;
 
             model.addAttribute("team", team);
             model.addAttribute("sprint", sprint);
             model.addAttribute("entries", entries);
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
+            model.addAttribute("diasUteis", diasUteis);
             model.addAttribute("backUrl", "/leader/team/" + teamId);
             if (sprint != null) {
                 model.addAttribute("sprintReport",
@@ -416,18 +421,25 @@ public class TeamController {
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
 
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
             List<DailyEntry> entries = dailyEntryRepository.findBySprint(sprint);
 
             Map<Long, List<DailyEntry>> entriesByMember = entries.stream()
                     .collect(Collectors.groupingBy(e -> e.getUser().getId()));
 
             long totalDays = ChronoUnit.DAYS.between(sprint.getStartDate(), sprint.getEndDate()) + 1;
+            long diasUteis = diasUteisNoPeriodo(sprint.getStartDate(), sprint.getEndDate());
 
             model.addAttribute("team", team);
             model.addAttribute("sprint", sprint);
             model.addAttribute("entries", entries);
             model.addAttribute("entriesByMember", entriesByMember);
             model.addAttribute("totalDays", totalDays);
+            model.addAttribute("diasUteis", diasUteis);
             model.addAttribute("backUrl", "/leader/team/" + teamId + "/history");
             model.addAttribute("sprintReport",
                     sprintReportService.findBySprint(sprint).orElse(null));
@@ -454,7 +466,7 @@ public class TeamController {
             if (sprint != null) {
                 sprint.setStatus(Sprint.Status.ENCERRADA);
                 sprintRepository.save(sprint);
-                sprintReportService.generateAndSaveAsync(sprint, team);
+                sprintReportService.generateAndSaveAsync(sprint.getId());
                 redirectAttributes.addFlashAttribute("success", "Sprint '" + sprint.getName() + "' encerrada! O relatório está sendo gerado e estará disponível em instantes.");
             } else {
                 redirectAttributes.addFlashAttribute("error", "Nenhuma sprint ativa encontrada.");
@@ -481,6 +493,11 @@ public class TeamController {
             Sprint sprint = sprintRepository.findById(sprintId)
                     .orElseThrow(() -> new RuntimeException("Sprint não encontrada"));
 
+            if (!sprint.getTeam().getId().equals(teamId)) {
+                redirectAttributes.addFlashAttribute("error", "Você não tem permissão para gerar este relatório");
+                return "redirect:/leader/team/" + teamId;
+            }
+
             sprintReportService.generateAndSave(sprint, team);
             redirectAttributes.addFlashAttribute("success", "Relatório gerado com sucesso!");
         } catch (RuntimeException e) {
@@ -493,5 +510,11 @@ public class TeamController {
         String email = auth.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+    private long diasUteisNoPeriodo(LocalDate inicio, LocalDate fim) {
+        return inicio.datesUntil(fim.plusDays(1))
+                .filter(d -> d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY)
+                .count();
     }
 }

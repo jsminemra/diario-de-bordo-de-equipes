@@ -4,10 +4,13 @@ import com.diariodebordo.diariobordo.config.SecurityConfig;
 import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
+import com.diariodebordo.diariobordo.service.SprintReportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -44,6 +47,15 @@ class DailyEntryControllerTest {
 
     @MockitoBean
     private HistoryService historyService;
+
+    @MockitoBean
+    private SprintRepository sprintRepository;
+
+    @MockitoBean
+    private DailyEntryRepository dailyEntryRepository;
+
+    @MockitoBean
+    private SprintReportService sprintReportService;
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;

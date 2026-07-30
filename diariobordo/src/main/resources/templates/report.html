@@ -128,9 +128,17 @@
           <span class="dot"></span>Líder
         </span>
         <th:block th:with="memberEntries=${entriesByMember != null ? entriesByMember.get(member.id) : null}">
-          <div style="margin-left:auto;font-size:12px;color:var(--text-3);">
-            <span class="mono" th:text="${memberEntries != null ? memberEntries.size() : 0}"></span>
-            registros
+          <div style="margin-left:auto;font-size:12px;color:var(--text-3);text-align:right;">
+            <div>
+              <span class="mono" th:text="${memberEntries != null ? memberEntries.size() : 0}"></span>
+              registros
+            </div>
+            <div th:if="${diasUteis != null}" style="font-size:11px;">
+              <span class="mono" th:text="${memberEntries != null ? memberEntries.size() : 0}"></span>
+              de
+              <span class="mono" th:text="${diasUteis}"></span>
+              dias úteis
+            </div>
           </div>
         </th:block>
       </div>
