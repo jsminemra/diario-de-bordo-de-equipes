@@ -151,6 +151,47 @@
           Nenhum registro nesta sprint.
         </div>
 
+        <!-- Síntese da sprint — registros agrupados por campo -->
+        <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="report-synthesis">
+          <div class="label" style="margin-bottom:10px;">Síntese da sprint</div>
+          <div class="report-synthesis-grid">
+            <div class="feed-cell">
+              <span class="label">O que foi feito</span>
+              <ul style="margin:6px 0 0;padding-left:16px;">
+                <li th:each="entry : ${memberEntries}" style="margin-bottom:4px;">
+                  <span class="mono" style="font-size:11px;color:var(--text-3);" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                  <span th:text="${entry.whatWasDone}"></span>
+                </li>
+              </ul>
+            </div>
+            <div class="feed-cell">
+              <span class="label">O que foi planejado</span>
+              <ul style="margin:6px 0 0;padding-left:16px;">
+                <li th:each="entry : ${memberEntries}" style="margin-bottom:4px;">
+                  <span class="mono" style="font-size:11px;color:var(--text-3);" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                  <span th:text="${entry.whatWillBeDone}"></span>
+                </li>
+              </ul>
+            </div>
+            <div class="feed-cell">
+              <span class="label">Impedimentos</span>
+              <ul th:if="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}"
+                  style="margin:6px 0 0;padding-left:16px;">
+                <li th:each="entry : ${memberEntries}"
+                    th:if="${entry.impediments != null and !entry.impediments.isEmpty()}"
+                    style="margin-bottom:4px;">
+                  <span class="mono" style="font-size:11px;color:var(--text-3);" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
+                  <span th:text="${entry.impediments}"></span>
+                </li>
+              </ul>
+              <p th:unless="${memberEntries.?[impediments != null and !impediments.isEmpty()].size() > 0}"
+                 style="margin:6px 0 0;color:var(--text-3);">Nenhum impedimento registrado na sprint.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalhamento por dia -->
+        <div th:if="${memberEntries != null and !memberEntries.isEmpty()}" class="label" style="margin:18px 0 4px;">Detalhamento por dia</div>
         <div th:each="entry : ${memberEntries}" class="report-entry">
           <div class="report-entry-date">
             <span class="mono" th:text="${#temporals.format(entry.entryDate,'dd/MM')}"></span>
@@ -231,6 +272,26 @@
     border-radius: 10px;
   }
 
+  .report-synthesis {
+    padding: 14px 16px;
+    margin-bottom: 4px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 0.5px solid var(--border);
+  }
+
+  .report-synthesis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .report-synthesis-grid ul, .report-synthesis-grid li {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
   .report-entry {
     display: grid;
     grid-template-columns: 48px 1fr;
@@ -270,6 +331,7 @@
     body { background: #fff; }
     .report-doc { margin: 0; padding: 24px 32px; max-width: 100%; }
     .report-member-section { break-inside: avoid; }
+    .report-synthesis { break-inside: avoid; }
     .report-entry { break-inside: avoid; }
   }
 </style>
