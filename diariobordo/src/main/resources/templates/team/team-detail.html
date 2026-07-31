@@ -114,6 +114,8 @@
             <span class="mono" th:text="${registrosHoje}"></span>
             <span style="font-size:13px;font-weight:400;color:var(--text-3);">/ <span th:text="${team.members.size()}"></span></span>
           </div>
+          <div id="counter-registros-hoje-text" style="font-size:11px;color:var(--text-3);margin-top:4px;"
+               th:text="${registrosHoje} + ' de ' + ${team.members.size()} + ' membros registraram hoje'"></div>
         </div>
         <div style="background:var(--surface-2);border-radius:10px;padding:14px 16px;">
           <div class="label" style="margin-bottom:6px;">Com impedimentos</div>
@@ -127,6 +129,15 @@
             <span class="mono" th:text="${diasRestantes}"></span>
           </div>
         </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 6px;">
+        <span class="label">Presença hoje</span>
+        <span class="mono" id="presenca-pct-label" style="font-size:12px;" th:text="${presencaPct} + '%'"></span>
+      </div>
+      <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden;">
+        <div id="presenca-pct-bar"
+             th:style="'width:' + ${presencaPct} + '%;background:var(--success);height:100%;border-radius:99px;transition:width 0.3s;'"></div>
       </div>
     </div>
 
@@ -147,34 +158,36 @@
       </span>
     </div>
 
-    <div th:each="member : ${team.members}" class="member-row">
-      <div class="avatar avatar-md"
-           th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
-           th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
-      <div>
-        <div class="member-name" th:text="${member.name}"></div>
-        <div class="member-role" th:text="${member.email}"></div>
-      </div>
-      <div>
-        <span th:if="${member.id == team.leader.id}" class="badge badge-primary">
-          <span class="dot"></span>Líder
-        </span>
-        <span th:unless="${member.id == team.leader.id}" class="badge badge-neutral">
-          <span class="dot"></span>Membro
-        </span>
-      </div>
-      <div>
-        <th:block th:if="${temSprint}" th:with="todayEntry=${entryMap != null ? entryMap.get(member.id) : null}">
-          <span th:if="${todayEntry != null}" class="badge badge-success"><span class="dot"></span>Registrou</span>
-          <span th:unless="${todayEntry != null}" class="badge badge-danger"><span class="dot"></span>Pendente</span>
-        </th:block>
-        <span th:unless="${temSprint}" class="badge badge-neutral">—</span>
-      </div>
-      <div style="display:flex;gap:6px;justify-content:flex-end;">
-        <a class="btn btn-ghost btn-sm" th:href="@{/leader/heatmap}">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Heatmap
-        </a>
+    <div id="section-members-list">
+      <div th:each="member : ${team.members}" class="member-row">
+        <div class="avatar avatar-md"
+             th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+             th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+        <div>
+          <div class="member-name" th:text="${member.name}"></div>
+          <div class="member-role" th:text="${member.email}"></div>
+        </div>
+        <div>
+          <span th:if="${member.id == team.leader.id}" class="badge badge-primary">
+            <span class="dot"></span>Líder
+          </span>
+          <span th:unless="${member.id == team.leader.id}" class="badge badge-neutral">
+            <span class="dot"></span>Membro
+          </span>
+        </div>
+        <div>
+          <th:block th:if="${temSprint}" th:with="todayEntry=${entryMap != null ? entryMap.get(member.id) : null}">
+            <span th:if="${todayEntry != null}" class="badge badge-success"><span class="dot"></span>Registrou</span>
+            <span th:unless="${todayEntry != null}" class="badge badge-danger"><span class="dot"></span>Pendente</span>
+          </th:block>
+          <span th:unless="${temSprint}" class="badge badge-neutral">—</span>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:flex-end;">
+          <a class="btn btn-ghost btn-sm" th:href="@{/leader/heatmap}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Heatmap
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -414,6 +427,33 @@
     if (btn && btnHeader) {
       btn.addEventListener('click', function () { btnHeader.click(); });
     }
+  })();
+
+  /* atualização em tempo real do indicador de presença e do contador — sem reload */
+  (function () {
+    var partialIds = ['section-members-list', 'counter-registros-hoje-text', 'presenca-pct-label'];
+
+    function refreshPresence() {
+      fetch(window.location.href, { credentials: 'same-origin' })
+        .then(function (r) { if (r.redirected) return; return r.text(); })
+        .then(function (html) {
+          if (!html) return;
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+
+          partialIds.forEach(function (id) {
+            var fresh = doc.getElementById(id);
+            var current = document.getElementById(id);
+            if (fresh && current) current.innerHTML = fresh.innerHTML;
+          });
+
+          var freshBar = doc.getElementById('presenca-pct-bar');
+          var currentBar = document.getElementById('presenca-pct-bar');
+          if (freshBar && currentBar) currentBar.setAttribute('style', freshBar.getAttribute('style'));
+        })
+        .catch(function () {});
+    }
+
+    setInterval(refreshPresence, 15000);
   })();
 </script>
 </body>

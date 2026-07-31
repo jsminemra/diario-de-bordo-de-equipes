@@ -135,13 +135,21 @@ public class TeamController {
                 long impedimentosHoje = todayEntries.stream()
                         .filter(e -> e.getImpediments() != null && !e.getImpediments().isBlank())
                         .count();
+                int totalMembers = team.getMembers().size();
+                int registrosHoje = todayEntries.size();
+                int presencaPct = totalMembers > 0
+                        ? (int) Math.round(registrosHoje * 100.0 / totalMembers)
+                        : 0;
+                int totalSprintEntries = dailyEntryRepository.findBySprint(sprintAtiva).size();
                 model.addAttribute("entryMap", entryMap);
                 model.addAttribute("totalDays", totalDays);
                 model.addAttribute("elapsed", elapsed);
                 model.addAttribute("diasRestantes", diasRestantes);
                 model.addAttribute("progressoPct", progressoPct);
-                model.addAttribute("registrosHoje", todayEntries.size());
+                model.addAttribute("registrosHoje", registrosHoje);
                 model.addAttribute("impedimentosHoje", impedimentosHoje);
+                model.addAttribute("presencaPct", presencaPct);
+                model.addAttribute("totalSprintEntries", totalSprintEntries);
             }
 
             model.addAttribute("team", team);
