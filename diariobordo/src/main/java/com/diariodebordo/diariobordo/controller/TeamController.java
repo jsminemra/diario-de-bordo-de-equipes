@@ -308,8 +308,13 @@ public class TeamController {
             allSprints.sort(Comparator.comparing(Sprint::getStartDate).reversed());
 
             Map<Long, List<DailyEntry>> entriesBySprintId = new LinkedHashMap<>();
+            Map<Long, List<DailyEntry>> todayEntriesBySprintId = new LinkedHashMap<>();
             for (Sprint s : allSprints) {
                 entriesBySprintId.put(s.getId(), new ArrayList<>());
+                if (s.getStatus() == Sprint.Status.ATIVA) {
+                    todayEntriesBySprintId.put(s.getId(),
+                            dailyEntryRepository.findBySprintAndEntryDateOrderByCreatedAtDesc(s, LocalDate.now()));
+                }
             }
             for (DailyEntry entry : history) {
                 Sprint s = entry.getSprint();
@@ -323,6 +328,7 @@ public class TeamController {
             model.addAttribute("sprint", sprint);
             model.addAttribute("allSprints", allSprints);
             model.addAttribute("entriesBySprintId", entriesBySprintId);
+            model.addAttribute("todayEntriesBySprintId", todayEntriesBySprintId);
             model.addAttribute("totalEntries", history.size());
             model.addAttribute("startDate", start);
             model.addAttribute("endDate", end);

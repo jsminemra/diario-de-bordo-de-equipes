@@ -49,21 +49,22 @@
   </div>
 
   <!-- ── Empty state ── -->
-  <div th:if="${totalEntries == 0}"
+  <div th:if="${allSprints.isEmpty()}"
        class="card" style="text-align:center;padding:60px 20px;">
     <div style="font-size:48px;margin-bottom:16px;">📋</div>
-    <h2 class="h2" style="margin:0 0 10px;">Nenhum registro encontrado</h2>
-    <p class="muted">Os registros da equipe aparecerão aqui agrupados por sprint.</p>
+    <h2 class="h2" style="margin:0 0 10px;">Nenhuma sprint encontrada</h2>
+    <p class="muted">As sprints da equipe aparecerão aqui, ordenadas da mais recente para a mais antiga.</p>
     <a th:href="@{/leader/team/{id}(id=${team.id})}" class="btn btn-ghost" style="display:inline-flex;margin-top:20px;">
       Voltar à equipe
     </a>
   </div>
 
   <!-- ── Sprint groups ── -->
-  <div th:unless="${totalEntries == 0}">
+  <div th:unless="${allSprints.isEmpty()}">
     <div th:each="sprint : ${allSprints}"
-         th:with="sprintEntries=${entriesBySprintId.get(sprint.id)}"
-         th:if="${sprintEntries != null and !sprintEntries.isEmpty()}"
+         th:with="sprintEntries=${entriesBySprintId.get(sprint.id)},
+                  isAtiva=${sprint.status.name() == 'ATIVA'},
+                  todayEntries=${todayEntriesBySprintId.get(sprint.id)}"
          style="margin-bottom:24px;">
 
       <div class="card">
@@ -76,19 +77,26 @@
               →
               <span class="mono" th:text="${#temporals.format(sprint.endDate,'dd/MM/yyyy')}"></span>
               ·
-              <span class="mono" th:text="${sprintEntries.size()}"></span>
-              <span th:if="${sprintEntries.size() == 1}"> registro</span>
-              <span th:unless="${sprintEntries.size() == 1}"> registros</span>
+              <span class="mono" th:text="${sprintEntries != null ? sprintEntries.size() : 0}"></span>
+              <span th:if="${sprintEntries != null and sprintEntries.size() == 1}"> registro</span>
+              <span th:unless="${sprintEntries != null and sprintEntries.size() == 1}"> registros</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <span th:if="${sprint.status.name() == 'ATIVA'}" class="badge badge-primary">
+            <span th:if="${isAtiva}" class="badge badge-primary">
               <span class="dot"></span>Ativa
             </span>
-            <span th:unless="${sprint.status.name() == 'ATIVA'}" class="badge badge-neutral">
+            <span th:unless="${isAtiva}" class="badge badge-neutral">
               Encerrada
             </span>
-            <a th:href="@{/leader/team/{teamId}/sprint/{sprintId}/report(teamId=${team.id}, sprintId=${sprint.id})}"
+            <a th:if="${isAtiva}"
+               th:href="@{/leader/team/{id}(id=${team.id})}"
+               class="btn btn-ghost btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ver feed de hoje
+            </a>
+            <a th:unless="${isAtiva}"
+               th:href="@{/leader/team/{teamId}/sprint/{sprintId}/report(teamId=${team.id}, sprintId=${sprint.id})}"
                class="btn btn-ghost btn-sm">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
               Ver relatório
@@ -96,15 +104,18 @@
           </div>
         </div>
 
-        <!-- Entries -->
-        <div class="card-body">
-          <div th:each="entry : ${sprintEntries}" class="timeline-item">
+        <!-- Body: sprint ativa — feed de registros do dia -->
+        <div th:if="${isAtiva}" class="card-body">
+          <div th:if="${todayEntries == null or todayEntries.isEmpty()}"
+               style="padding:16px 0;font-size:13px;color:var(--text-3);font-style:italic;">
+            Nenhum registro hoje ainda nesta sprint.
+          </div>
+          <div th:each="entry : ${todayEntries}" class="timeline-item">
             <div class="timeline-date">
               <span th:text="${#temporals.format(entry.entryDate, 'dd/MM/yyyy')}"></span>
               <span class="weekday" th:text="${#temporals.format(entry.entryDate, 'EEE')}"></span>
             </div>
             <div class="timeline-body">
-              <!-- Member row -->
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:0.5px solid var(--border);">
                 <div class="avatar avatar-sm"
                      th:style="'background:hsl(' + ${(entry.user.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
@@ -126,6 +137,19 @@
                    th:style="${(entry.impediments == null or entry.impediments.isEmpty()) ? 'color:var(--text-3)' : ''}"></p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Body: sprint encerrada — sem detalhe inline, ver relatório -->
+        <div th:unless="${isAtiva}" class="card-body">
+          <div th:if="${sprintEntries == null or sprintEntries.isEmpty()}"
+               style="padding:16px 0;font-size:13px;color:var(--text-3);font-style:italic;">
+            Nenhum registro nesta sprint.
+          </div>
+          <div th:unless="${sprintEntries == null or sprintEntries.isEmpty()}"
+               style="padding:16px 0;font-size:13px;color:var(--text-3);">
+            <span class="mono" th:text="${sprintEntries.size()}"></span> registro(s) preservados.
+            O relatório completo está disponível no link acima.
           </div>
         </div>
 
