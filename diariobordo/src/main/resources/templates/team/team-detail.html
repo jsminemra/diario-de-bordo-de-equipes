@@ -270,6 +270,10 @@
           Tem certeza que deseja encerrar
           <strong th:text="${sprintAtiva != null ? sprintAtiva.name : 'a sprint atual'}"></strong>?
         </p>
+        <p style="margin:0;font-size:13px;color:var(--text-3);">
+          <span class="mono" th:text="${totalSprintEntries != null ? totalSprintEntries : 0}"></span>
+          registro(s) serão preservados nesta sprint.
+        </p>
       </div>
     </div>
     <div class="modal-footer">
@@ -277,7 +281,7 @@
       <form th:if="${sprintAtiva != null}"
             th:action="@{/leader/team/{id}/sprint/close(id=${team.id})}" method="post"
             style="display:inline;">
-        <button type="submit" class="btn btn-danger">Encerrar sprint</button>
+        <button id="btn-confirmar-encerrar" type="submit" class="btn btn-danger" disabled>Encerrar sprint</button>
       </form>
     </div>
   </div>
