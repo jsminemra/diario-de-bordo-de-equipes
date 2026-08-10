@@ -90,6 +90,9 @@
           <div class="muted" style="font-size:12.5px;margin-top:3px;">
             <span th:if="${progress.currentSprintName != null}" th:text="${progress.currentSprintName}"></span>
             <span th:unless="${progress.currentSprintName != null}">Sem sprint ativa</span>
+            <span th:if="${progress.currentSprintName != null and progress.currentSprintStartDate != null}" class="mono">
+              · <span th:text="${#temporals.format(progress.currentSprintStartDate,'dd/MM')}"></span>–<span th:text="${#temporals.format(progress.currentSprintEndDate,'dd/MM')}"></span>
+            </span>
           </div>
         </div>
         <span th:if="${temAusentes}" class="badge badge-danger" title="Há membros que ainda não registraram hoje">
