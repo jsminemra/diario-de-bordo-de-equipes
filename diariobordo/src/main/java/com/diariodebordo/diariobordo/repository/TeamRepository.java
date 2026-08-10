@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
@@ -14,4 +15,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Query("SELECT t FROM Team t JOIN t.members m WHERE m.id = :userId")
     List<Team> findByMemberId(@Param("userId") Long userId);
+
+    Optional<Team> findByCode(String code);
+
+    boolean existsByCode(String code);
 }

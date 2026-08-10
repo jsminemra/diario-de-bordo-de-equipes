@@ -210,6 +210,20 @@ public class TeamController {
         }
     }
 
+    @PostMapping("/team/{teamId}/regenerate-code")
+    public String regenerateCode(@PathVariable Long teamId,
+                                 Authentication auth,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            teamService.regenerateCode(teamId, leader);
+            redirectAttributes.addFlashAttribute("success", "Novo código de convite gerado!");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/leader/team/" + teamId;
+    }
+
     @PostMapping("/team/{teamId}/entry")
     public String saveDailyEntry(@PathVariable Long teamId,
                                  @Valid @ModelAttribute("dailyEntryDTO") DailyEntryDTO dto,

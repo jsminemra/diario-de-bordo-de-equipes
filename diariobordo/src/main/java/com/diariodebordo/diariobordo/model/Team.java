@@ -22,6 +22,9 @@ public class Team {
     @JoinColumn(name = "leader_id", nullable = false)
     private User leader;
 
+    @Column(unique = true, length = 8)
+    private String code;
+
     @ManyToMany
     @JoinTable(
             name = "team_members",
