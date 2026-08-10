@@ -25,6 +25,10 @@ public class Team {
     @Column(unique = true, length = 8)
     private String code;
 
+    /** Repositório GitHub da equipe, formato "owner/repo". Usado pela US-19b para buscar commits. */
+    @Column(name = "github_repo")
+    private String githubRepo;
+
     @ManyToMany
     @JoinTable(
             name = "team_members",
