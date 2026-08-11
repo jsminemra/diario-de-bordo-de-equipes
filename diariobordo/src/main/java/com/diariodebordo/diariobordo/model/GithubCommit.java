@@ -3,7 +3,6 @@ package com.diariodebordo.diariobordo.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -28,7 +27,7 @@ public class GithubCommit {
     private String sha;
 
     @Column(name = "commit_date", nullable = false)
-    private LocalDate commitDate;
+    private LocalDateTime commitDate;
 
     @Column(columnDefinition = "TEXT")
     private String message;
