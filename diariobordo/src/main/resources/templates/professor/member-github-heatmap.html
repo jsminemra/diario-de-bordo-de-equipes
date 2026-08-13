@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Heatmap GitHub')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/professor/panel}">Painel</a>
+      <a class="topnav-link" th:href="@{/professor/team/{id}(id=${team.id})}" th:text="${team.name}"></a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page" style="max-width:1040px;">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Heatmap de commits (GitHub)</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="avatar avatar-md"
+             th:style="'background:hsl(' + ${(member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+             th:text="${member.name.length() >= 2 ? member.name.substring(0,2).toUpperCase() : member.name.toUpperCase()}">MB</div>
+        <h1 class="h1" style="margin:0;" th:text="${member.name}"></h1>
+        <span th:if="${member.id == team.leader.id}" class="badge badge-primary"><span class="dot"></span>Líder</span>
+        <span th:unless="${member.id == team.leader.id}" class="badge badge-neutral"><span class="dot"></span>Membro</span>
+      </div>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        <span th:text="${team.name}"></span>
+        · <span class="mono" th:text="${totalRegistros}"></span> commits nos últimos <span th:text="${days}"></span> dias
+      </p>
+    </div>
+    <a th:href="@{/professor/team/{id}(id=${team.id})}" class="btn btn-ghost">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Voltar à equipe
+    </a>
+  </div>
+
+  <div th:if="${semDadosMotivo != null}"
+       style="background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 16px;
+              font-size:13px;margin-bottom:20px;border:0.5px solid rgba(180,120,0,0.2);"
+       th:text="${semDadosMotivo}"></div>
+
+  <!-- ── Two-column layout ── -->
+  <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start;">
+
+    <!-- ── Member list sidebar ── -->
+    <div class="card" style="padding:0;">
+      <div class="card-header" style="padding:14px 16px;">
+        <div class="card-title" style="font-size:12px;">Membros da equipe</div>
+      </div>
+      <div th:each="m : ${team.members}">
+        <a th:href="@{/professor/team/{teamId}/github/heatmap/{userId}(teamId=${team.id}, userId=${m.id})}"
+           th:style="'display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:inherit;border-top:0.5px solid var(--border);transition:background 0.15s;' + (${m.id == member.id} ? 'background:var(--surface-2);border-left:2px solid var(--primary);' : 'border-left:2px solid transparent;')">
+          <div class="avatar avatar-sm"
+               th:style="'background:hsl(' + ${(m.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+               th:text="${m.name.length() >= 2 ? m.name.substring(0,2).toUpperCase() : m.name.toUpperCase()}">MB</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                 th:text="${m.name}"></div>
+            <div style="font-size:10.5px;color:var(--text-3);"
+                 th:text="${m.id == team.leader.id ? 'Líder' : 'Membro'}"></div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- ── Right column: stats + heatmap ── -->
+    <div>
+
+      <!-- Stats strip -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px;">
+        <div class="card" style="padding:18px 20px;">
+          <div class="label" style="margin-bottom:6px;">Total de commits</div>
+          <div style="font-size:24px;font-weight:700;letter-spacing:-0.5px;">
+            <span class="mono" th:text="${totalRegistros}">0</span>
+          </div>
+          <div style="margin-top:6px;">
+            <span class="badge badge-neutral">últimos <span th:text="${days}"></span> dias</span>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 20px;">
+          <div class="label" style="margin-bottom:6px;">Repositório</div>
+          <div style="font-size:14px;font-weight:600;" class="mono"
+               th:text="${team.githubRepo != null ? team.githubRepo : 'não configurado'}"></div>
+        </div>
+      </div>
+
+      <!-- Heatmap card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Atividade de commits</div>
+            <div class="card-subtitle">Últimos <span th:text="${days}"></span> dias. Passe o mouse para ver o resumo.</div>
+          </div>
+          <div class="heatmap-legend">
+            <span>Sem commit</span>
+            <div class="swatches">
+              <div class="sw" style="background:#EEF1F5;"></div>
+              <div class="sw" style="background:#C8DDF1;"></div>
+              <div class="sw" style="background:#8EBAE0;"></div>
+              <div class="sw" style="background:#4E8DC8;"></div>
+              <div class="sw" style="background:#185FA5;"></div>
+            </div>
+            <span>Mais commits</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:32px 1fr;gap:8px;align-items:start;">
+            <!-- weekday labels -->
+            <div style="display:grid;grid-template-rows:repeat(7,13px);gap:3px;font-size:10px;
+                        color:var(--text-3);font-weight:600;margin-top:20px;">
+              <div style="height:13px;line-height:13px;">Seg</div>
+              <div style="height:13px;line-height:13px;"></div>
+              <div style="height:13px;line-height:13px;">Qua</div>
+              <div style="height:13px;line-height:13px;"></div>
+              <div style="height:13px;line-height:13px;">Sex</div>
+              <div style="height:13px;line-height:13px;"></div>
+              <div style="height:13px;line-height:13px;"></div>
+            </div>
+            <!-- cells -->
+            <div>
+              <div class="heatmap">
+                <div th:each="cell : ${heatmapData}"
+                     class="heatmap-cell"
+                     th:attr="data-level=${cell.date.isAfter(#temporals.createToday()) ? 'future' : (cell.count == 0 ? '0' : (cell.count == 1 ? '1' : (cell.count == 2 ? '2' : (cell.count == 3 ? '3' : '4'))))},
+                              data-date=${#temporals.format(cell.date, 'dd MMM yyyy')},
+                              data-fiz=${cell.summary}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right column -->
+  </div><!-- /two-column -->
+
+</div>
+
+<script th:src="@{/js/heatmap.js}"></script>
+</body>
+</html>

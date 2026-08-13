@@ -14,6 +14,9 @@
       <a class="topnav-link" th:href="@{/leader/team/{id}(id=${team.id})}">Hoje</a>
       <a class="topnav-link active" th:href="@{/leader/team/{id}/history(id=${team.id})}">Histórico</a>
       <a class="topnav-link" th:href="@{/leader/team/{id}/sprint/report(id=${team.id})}">Relatório</a>
+      <a class="topnav-link" th:href="@{/leader/heatmap}">Meu heatmap</a>
+      <a class="topnav-link" th:href="@{/github/link}">GitHub</a>
+      <a class="topnav-link" th:href="@{/leader/team/{id}/github/heatmap(id=${team.id})}">Heatmap GitHub</a>
     </nav>
   </div>
   <div class="topnav-right">

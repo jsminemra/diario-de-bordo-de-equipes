@@ -215,6 +215,14 @@ body { font-family: var(--font); color: var(--text); margin: 0; }
 .heatmap-cell[data-level="4"] { background: #185FA5; }
 .heatmap-cell[data-level="future"] { background: transparent; border: 0.5px dashed rgba(15,23,42,0.10); cursor: default; }
 
+/* faixa compacta por membro, usada nas visões "gerais" (um heatmap por
+   integrante da equipe, lado a lado, pra comparar atividade) */
+.heatmap-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
 /* ── Progress ── */
 .progress {
   height: 6px;

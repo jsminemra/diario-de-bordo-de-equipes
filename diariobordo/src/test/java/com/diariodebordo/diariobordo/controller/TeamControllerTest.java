@@ -9,6 +9,7 @@ import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
+import com.diariodebordo.diariobordo.service.GitHubService;
 import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
@@ -71,6 +72,9 @@ class TeamControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private GitHubService gitHubService;
 
     @Test
     void getCreateDeveRetornarStatus200EViewCreateTeam() throws Exception {

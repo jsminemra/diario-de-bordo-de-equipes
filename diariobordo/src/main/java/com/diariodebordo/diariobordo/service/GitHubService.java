@@ -3,6 +3,7 @@ package com.diariodebordo.diariobordo.service;
 import com.diariodebordo.diariobordo.dto.GitHubCommitDTO;
 import com.diariodebordo.diariobordo.dto.GitHubUserDTO;
 import com.diariodebordo.diariobordo.dto.HeatmapDataDTO;
+import com.diariodebordo.diariobordo.dto.MemberHeatmapDTO;
 import com.diariodebordo.diariobordo.model.GithubCommit;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
@@ -137,6 +138,33 @@ public class GitHubService {
                 .orElse(null);
 
         return CommitFetchResult.ok(dtos, lastSyncedAt, rateLimited);
+    }
+
+    /**
+     * Heatmap "geral" do GitHub: um heatmap de commits por membro da
+     * equipe. Membros sem username vinculado, ou sem repositório da
+     * equipe configurado, aparecem com heatmap vazio e o motivo em
+     * semDadosMotivo (fetchCommits já cobre os dois casos).
+     */
+    @Transactional
+    public List<MemberHeatmapDTO> getTeamGithubHeatmapData(Team team, int days) {
+        List<MemberHeatmapDTO> result = new ArrayList<>();
+        for (User member : team.getMembers()) {
+            CommitFetchResult r = fetchCommits(member, team);
+            List<HeatmapDataDTO> data = buildHeatmap(r.getCommits(), days);
+
+            MemberHeatmapDTO dto = new MemberHeatmapDTO();
+            dto.setMember(member);
+            dto.setHeatmapData(data);
+            dto.setTotalAtividade(r.getCommits().size());
+            if (member.getGithubUsername() == null || member.getGithubUsername().isBlank()) {
+                dto.setSemDadosMotivo("GitHub não vinculado");
+            } else if (team.getGithubRepo() == null || team.getGithubRepo().isBlank()) {
+                dto.setSemDadosMotivo("Repositório da equipe não configurado");
+            }
+            result.add(dto);
+        }
+        return result;
     }
 
     public List<HeatmapDataDTO> buildHeatmap(List<GitHubCommitDTO> commits, int days) {

@@ -1,6 +1,7 @@
 package com.diariodebordo.diariobordo.controller;
 
 import com.diariodebordo.diariobordo.dto.HeatmapDataDTO;
+import com.diariodebordo.diariobordo.dto.MemberHeatmapDTO;
 import com.diariodebordo.diariobordo.dto.TeamProgressDTO;
 import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
@@ -10,6 +11,7 @@ import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
+import com.diariodebordo.diariobordo.service.GitHubService;
 import com.diariodebordo.diariobordo.service.HeatmapService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.TeamService;
@@ -42,6 +44,7 @@ public class ProfessorController {
     private final HeatmapService heatmapService;
     private final SprintReportService sprintReportService;
     private final TeamService teamService;
+    private final GitHubService gitHubService;
 
     private static final int[][] RELEASE_SPRINTS = {
         {1, 2},   // Release I: Sprints 1-2
@@ -63,7 +66,8 @@ public class ProfessorController {
                                DailyEntryRepository dailyEntryRepository,
                                HeatmapService heatmapService,
                                SprintReportService sprintReportService,
-                               TeamService teamService) {
+                               TeamService teamService,
+                               GitHubService gitHubService) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.sprintRepository = sprintRepository;
@@ -71,6 +75,7 @@ public class ProfessorController {
         this.heatmapService = heatmapService;
         this.sprintReportService = sprintReportService;
         this.teamService = teamService;
+        this.gitHubService = gitHubService;
     }
 
     @GetMapping("/panel")
@@ -261,7 +266,80 @@ public class ProfessorController {
         
         return "professor/member-heatmap";
     }
-    
+
+    @GetMapping("/team/{teamId}/github/heatmap/{userId}")
+    public String viewMemberGithubHeatmap(@PathVariable Long teamId,
+                                          @PathVariable Long userId,
+                                          Model model) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        User member = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        boolean isMember = team.getMembers().stream()
+                .anyMatch(m -> m.getId().equals(member.getId()));
+
+        if (!isMember) {
+            throw new RuntimeException("Usuário não pertence a esta equipe");
+        }
+
+        GitHubService.CommitFetchResult result = gitHubService.fetchCommits(member, team);
+        List<HeatmapDataDTO> heatmapData = gitHubService.buildHeatmap(result.getCommits(), 90);
+
+        List<List<HeatmapDataDTO>> weeks = new ArrayList<>();
+        List<HeatmapDataDTO> currentWeek = new ArrayList<>();
+        for (int i = 0; i < heatmapData.size(); i++) {
+            currentWeek.add(heatmapData.get(i));
+            if ((i + 1) % 7 == 0 || i == heatmapData.size() - 1) {
+                weeks.add(currentWeek);
+                currentWeek = new ArrayList<>();
+            }
+        }
+
+        model.addAttribute("team", team);
+        model.addAttribute("member", member);
+        model.addAttribute("heatmapData", heatmapData);
+        model.addAttribute("weeks", weeks);
+        model.addAttribute("days", 90);
+        model.addAttribute("totalRegistros", result.getCommits().size());
+        model.addAttribute("semDadosMotivo",
+                member.getGithubUsername() == null || member.getGithubUsername().isBlank()
+                        ? "GitHub não vinculado por este usuário"
+                        : (team.getGithubRepo() == null || team.getGithubRepo().isBlank()
+                                ? "Repositório da equipe não configurado" : null));
+
+        return "professor/member-github-heatmap";
+    }
+
+    @GetMapping("/team/{teamId}/heatmap")
+    public String viewTeamHeatmap(@PathVariable Long teamId, Model model) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        List<MemberHeatmapDTO> memberHeatmaps = heatmapService.getTeamHeatmapData(team, 90);
+
+        model.addAttribute("team", team);
+        model.addAttribute("memberHeatmaps", memberHeatmaps);
+        model.addAttribute("days", 90);
+
+        return "professor/heatmap-geral";
+    }
+
+    @GetMapping("/team/{teamId}/github/heatmap")
+    public String viewTeamGithubHeatmap(@PathVariable Long teamId, Model model) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        List<MemberHeatmapDTO> memberHeatmaps = gitHubService.getTeamGithubHeatmapData(team, 90);
+
+        model.addAttribute("team", team);
+        model.addAttribute("memberHeatmaps", memberHeatmaps);
+        model.addAttribute("days", 90);
+
+        return "professor/github-heatmap-geral";
+    }
+
     private TeamProgressDTO calculateTeamProgress(Team team) {
         TeamProgressDTO progress = new TeamProgressDTO();
         progress.setTeamId(team.getId());
