@@ -12,6 +12,7 @@ import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.HeatmapService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
+import com.diariodebordo.diariobordo.service.TeamService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +41,7 @@ public class ProfessorController {
     private final DailyEntryRepository dailyEntryRepository;
     private final HeatmapService heatmapService;
     private final SprintReportService sprintReportService;
+    private final TeamService teamService;
 
     private static final int[][] RELEASE_SPRINTS = {
         {1, 2},   // Release I: Sprints 1-2
@@ -60,13 +62,15 @@ public class ProfessorController {
                                SprintRepository sprintRepository,
                                DailyEntryRepository dailyEntryRepository,
                                HeatmapService heatmapService,
-                               SprintReportService sprintReportService) {
+                               SprintReportService sprintReportService,
+                               TeamService teamService) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
         this.sprintRepository = sprintRepository;
         this.dailyEntryRepository = dailyEntryRepository;
         this.heatmapService = heatmapService;
         this.sprintReportService = sprintReportService;
+        this.teamService = teamService;
     }
 
     @GetMapping("/panel")
@@ -110,7 +114,7 @@ public class ProfessorController {
     @PostMapping("/team/{teamId}/delete")
     public String deleteTeam(@PathVariable Long teamId, RedirectAttributes redirectAttributes) {
         try {
-            teamRepository.deleteById(teamId);
+            teamService.deleteTeam(teamId);
             redirectAttributes.addFlashAttribute("success", "Equipe excluída com sucesso!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Não foi possível excluir a equipe: " + e.getMessage());

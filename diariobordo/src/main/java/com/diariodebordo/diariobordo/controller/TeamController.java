@@ -498,7 +498,12 @@ public class TeamController {
                                                          @PathVariable Long sprintId,
                                                          Authentication auth) {
         User leader = getAuthenticatedUser(auth);
-        Team team = teamService.getTeamWithMembers(teamId);
+        Team team;
+        try {
+            team = teamService.getTeamWithMembers(teamId);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
 
         if (!team.getLeader().getId().equals(leader.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
