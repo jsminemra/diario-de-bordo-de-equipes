@@ -90,6 +90,32 @@ public class TeamService {
     }
 
     @Transactional
+    public Team setGithubRepo(Long teamId, User leader, String rawRepo) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        if (!team.getLeader().getId().equals(leader.getId())) {
+            throw new RuntimeException("Apenas o líder pode configurar o repositório da equipe");
+        }
+
+        if (rawRepo == null || rawRepo.isBlank()) {
+            throw new RuntimeException("Informe o repositório no formato owner/repo");
+        }
+
+        String repo = rawRepo.trim()
+                .replaceFirst("^https?://github\\.com/", "")
+                .replaceFirst("\\.git$", "")
+                .replaceFirst("/$", "");
+
+        if (!repo.matches("[\\w.-]+/[\\w.-]+")) {
+            throw new RuntimeException("Formato inválido. Use owner/repo, ex.: jsminemra/diario-de-bordo-de-equipes");
+        }
+
+        team.setGithubRepo(repo);
+        return teamRepository.save(team);
+    }
+
+    @Transactional
     public Team addMember(Long teamId, AddMemberDTO dto, User leader) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));

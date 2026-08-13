@@ -224,6 +224,21 @@ public class TeamController {
         return "redirect:/leader/team/" + teamId;
     }
 
+    @PostMapping("/team/{teamId}/github-repo")
+    public String setGithubRepo(@PathVariable Long teamId,
+                                @RequestParam String githubRepo,
+                                Authentication auth,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            User leader = getAuthenticatedUser(auth);
+            teamService.setGithubRepo(teamId, leader, githubRepo);
+            redirectAttributes.addFlashAttribute("success", "Repositório GitHub da equipe atualizado!");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/leader/team/" + teamId;
+    }
+
     @PostMapping("/team/{teamId}/entry")
     public String saveDailyEntry(@PathVariable Long teamId,
                                  @Valid @ModelAttribute("dailyEntryDTO") DailyEntryDTO dto,

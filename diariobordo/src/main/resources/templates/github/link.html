@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Vincular GitHub')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/dashboard}">Dashboard</a>
+      <a class="topnav-link active" th:href="@{/github/link}">Vincular GitHub</a>
+      <a class="topnav-link" th:href="@{/github/heatmap}">Heatmap</a>
+      <a class="topnav-link" th:href="@{/github/commits}">Commits</a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page" style="max-width:600px;margin:0 auto;">
+
+  <!-- Navegação rápida -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <a th:href="@{/dashboard}" class="btn btn-ghost btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Dashboard
+    </a>
+    <a th:href="@{/github/heatmap}" class="btn btn-ghost btn-sm">Heatmap</a>
+    <a th:href="@{/github/commits}" class="btn btn-ghost btn-sm">Commits</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Vincular Conta do GitHub</div>
+        <div class="card-subtitle">Conecte sua conta do GitHub para visualizar commits e heatmap</div>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- Mensagens de sucesso/erro -->
+      <div th:if="${success}"
+           style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 16px;
+                  font-size:13px;margin-bottom:16px;border:0.5px solid rgba(21,128,61,0.15);"
+           th:text="${success}"></div>
+      <div th:if="${error}"
+           style="background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 16px;
+                  font-size:13px;margin-bottom:16px;border:0.5px solid rgba(185,28,28,0.2);"
+           th:text="${error}"></div>
+
+      <!-- Conta atualmente vinculada -->
+      <div th:if="${currentGithub != null and currentGithub != ''}"
+           style="background:var(--surface-2);border-radius:8px;padding:10px 16px;font-size:13px;
+                  margin-bottom:16px;border:0.5px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <span>Conta atualmente vinculada: <strong class="mono" th:text="${currentGithub}"></strong></span>
+        <form th:action="@{/github/unlink}" method="post" style="display:inline;margin-left:auto;">
+          <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);">Desvincular</button>
+        </form>
+      </div>
+
+      <!-- Formulário de vinculação -->
+      <form method="post" th:action="@{/github/link}">
+        <div class="input-group" style="margin-bottom:16px;">
+          <label class="input-label" for="githubUsername">Usuário do GitHub</label>
+          <input class="input" type="text" id="githubUsername" name="githubUsername"
+                 placeholder="Ex: octocat" required>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:5px;">
+            Digite seu nome de usuário do GitHub (sem o @).
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary">Vincular</button>
+          <a th:href="@{/dashboard}" class="btn btn-ghost">Voltar</a>
+        </div>
+      </form>
+
+      <hr style="border:none;border-top:0.5px solid var(--border);margin:20px 0;">
+
+      <!-- Acesso rápido às funcionalidades (aparece se já tiver conta vinculada) -->
+      <div th:if="${currentGithub != null and currentGithub != ''}" style="margin-top:16px;">
+        <div class="label" style="margin-bottom:12px;">Acesse suas funcionalidades</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a th:href="@{/github/heatmap}" class="btn btn-ghost">Heatmap de Commits</a>
+          <a th:href="@{/github/commits}" class="btn btn-ghost">Ver Commits</a>
+        </div>
+      </div>
+
+      <!-- Informações -->
+      <div style="font-size:12px;color:var(--text-3);margin-top:16px;">
+        <p>Ao vincular sua conta do GitHub, você poderá:</p>
+        <ul>
+          <li>Visualizar seu <strong>heatmap de commits</strong></li>
+          <li>Ver a <strong>lista de commits</strong> dos repositórios públicos</li>
+          <li>Acompanhar sua <strong>atividade de código</strong> no semestre</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -266,6 +266,30 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════
+       REPOSITÓRIO GITHUB DA EQUIPE — sempre visível
+       ══════════════════════════════════════════════════════════════════ -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Repositório GitHub da equipe</div>
+        <div class="card-subtitle">Usado para buscar os commits de cada membro (US-19b/19c).</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/leader/team/{id}/github-repo(id=${team.id})}" method="post"
+            style="display:flex;gap:10px;align-items:flex-end;">
+        <div class="input-group" style="flex:1;margin:0;">
+          <label class="input-label">Repositório (owner/repo)</label>
+          <input class="input mono" type="text" name="githubRepo"
+                 th:value="${team.githubRepo}"
+                 placeholder="ex.: jsminemra/diario-de-bordo-de-equipes" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════
        ADICIONAR MEMBRO — sempre visível
        ══════════════════════════════════════════════════════════════════ -->
   <div class="card">
