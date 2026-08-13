@@ -268,6 +268,14 @@
     border-bottom: 0.5px solid var(--border);
   }
 
+  /* Risco RF-13b: com muitos registros (ex.: 10 membros x 30 dias = 300),
+     cada coluna da síntese pode crescer sem limite. Contida com scroll na
+     tela; sem limite na impressão/PDF pra não cortar conteúdo. */
+  .report-synthesis-grid ul {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
   .report-member-header {
     display: flex;
     align-items: center;
@@ -336,9 +344,18 @@
     .report-toolbar { display: none !important; }
     body { background: #fff; }
     .report-doc { margin: 0; padding: 24px 32px; max-width: 100%; }
-    .report-member-section { break-inside: avoid; }
-    .report-synthesis { break-inside: avoid; }
+    /* .report-member-section e .report-synthesis NÃO usam break-inside:avoid
+       de propósito: com muitos registros esses blocos podem ultrapassar uma
+       página inteira, e forçar "avoid" num bloco maior que a página é
+       ignorado pelos navegadores de forma inconsistente, produzindo corte
+       ou sobreposição de conteúdo (Risco RF-13b). Deixamos quebrar
+       naturalmente entre páginas; só o registro individual (pequeno e
+       atômico) evita quebra no meio. */
     .report-entry { break-inside: avoid; }
+    .report-synthesis-grid ul {
+      max-height: none;
+      overflow: visible;
+    }
   }
 </style>
 

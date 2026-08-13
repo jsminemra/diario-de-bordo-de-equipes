@@ -2,8 +2,12 @@ package com.diariodebordo.diariobordo.service;
 
 import com.diariodebordo.diariobordo.dto.AddMemberDTO;
 import com.diariodebordo.diariobordo.dto.TeamCreateDTO;
+import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
+import com.diariodebordo.diariobordo.repository.SprintReportRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -22,10 +26,20 @@ public class TeamService {
 
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final SprintRepository sprintRepository;
+    private final DailyEntryRepository dailyEntryRepository;
+    private final SprintReportRepository sprintReportRepository;
 
-    public TeamService(TeamRepository teamRepository, UserRepository userRepository) {
+    public TeamService(TeamRepository teamRepository,
+                       UserRepository userRepository,
+                       SprintRepository sprintRepository,
+                       DailyEntryRepository dailyEntryRepository,
+                       SprintReportRepository sprintReportRepository) {
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
+        this.sprintRepository = sprintRepository;
+        this.dailyEntryRepository = dailyEntryRepository;
+        this.sprintReportRepository = sprintReportRepository;
     }
 
     @Transactional
@@ -158,5 +172,31 @@ public class TeamService {
     
     public List<Team> getTeamsByLeader(User leader) {
         return teamRepository.findByLeader(leader);
+    }
+
+    /**
+     * Exclui a equipe e todos os dados associados (US-17). Sprint, DailyEntry
+     * e SprintReport não têm cascade declarado no lado do Team (só
+     * @ManyToOne apontando pra Team/Sprint), então o delete direto de
+     * team_repository.deleteById falhava por violação de FK em qualquer
+     * equipe que já tivesse sprint. Aqui a remoção é feita na ordem certa
+     * (registros → relatórios → sprints → equipe) dentro de uma única
+     * transação, o que também mitiga o Risco RF-14: como os relatórios são
+     * apagados junto, uma URL antiga de relatório passa a resultar em
+     * "não encontrado" em vez de continuar acessível.
+     */
+    @Transactional
+    public void deleteTeam(Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Equipe não encontrada"));
+
+        List<Sprint> sprints = sprintRepository.findByTeam(team);
+        for (Sprint sprint : sprints) {
+            dailyEntryRepository.deleteAll(dailyEntryRepository.findBySprint(sprint));
+            sprintReportRepository.findBySprint(sprint).ifPresent(sprintReportRepository::delete);
+        }
+        sprintRepository.deleteAll(sprints);
+
+        teamRepository.delete(team);
     }
 }

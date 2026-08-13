@@ -2,8 +2,14 @@ package com.diariodebordo.diariobordo.service;
 
 import com.diariodebordo.diariobordo.dto.AddMemberDTO;
 import com.diariodebordo.diariobordo.dto.TeamCreateDTO;
+import com.diariodebordo.diariobordo.model.DailyEntry;
+import com.diariodebordo.diariobordo.model.Sprint;
+import com.diariodebordo.diariobordo.model.SprintReport;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
+import com.diariodebordo.diariobordo.repository.SprintReportRepository;
+import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.TeamRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -20,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +38,15 @@ class TeamServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private SprintRepository sprintRepository;
+
+    @Mock
+    private DailyEntryRepository dailyEntryRepository;
+
+    @Mock
+    private SprintReportRepository sprintReportRepository;
 
     @InjectMocks
     private TeamService teamService;
@@ -156,5 +172,72 @@ class TeamServiceTest {
         assertThatThrownBy(() -> teamService.addMember(1L, dto, leader))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("já é membro desta equipe");
+    }
+
+    // ─── deleteTeam (US-17) ─────────────────────────────────────────────────
+
+    @Test
+    void deveExcluirEquipeComSprintsRegistrosERelatorios() {
+        Team team = new Team();
+        team.setId(1L);
+
+        Sprint sprintEncerrada = new Sprint();
+        sprintEncerrada.setId(10L);
+        sprintEncerrada.setTeam(team);
+
+        Sprint sprintAtiva = new Sprint();
+        sprintAtiva.setId(11L);
+        sprintAtiva.setTeam(team);
+
+        DailyEntry entry1 = new DailyEntry();
+        entry1.setId(100L);
+        DailyEntry entry2 = new DailyEntry();
+        entry2.setId(101L);
+
+        SprintReport report = new SprintReport();
+        report.setId(200L);
+        report.setSprint(sprintEncerrada);
+
+        when(teamRepository.findById(1L)).thenReturn(Optional.of(team));
+        when(sprintRepository.findByTeam(team)).thenReturn(List.of(sprintEncerrada, sprintAtiva));
+        when(dailyEntryRepository.findBySprint(sprintEncerrada)).thenReturn(List.of(entry1, entry2));
+        when(dailyEntryRepository.findBySprint(sprintAtiva)).thenReturn(Collections.emptyList());
+        when(sprintReportRepository.findBySprint(sprintEncerrada)).thenReturn(Optional.of(report));
+        when(sprintReportRepository.findBySprint(sprintAtiva)).thenReturn(Optional.empty());
+
+        teamService.deleteTeam(1L);
+
+        verify(dailyEntryRepository).deleteAll(List.of(entry1, entry2));
+        verify(dailyEntryRepository).deleteAll(Collections.emptyList());
+        verify(sprintReportRepository).delete(report);
+        verify(sprintRepository).deleteAll(List.of(sprintEncerrada, sprintAtiva));
+        verify(teamRepository).delete(team);
+    }
+
+    @Test
+    void deveExcluirEquipeSemSprintsSemChamarDeletesDeFilhos() {
+        Team team = new Team();
+        team.setId(2L);
+
+        when(teamRepository.findById(2L)).thenReturn(Optional.of(team));
+        when(sprintRepository.findByTeam(team)).thenReturn(Collections.emptyList());
+
+        teamService.deleteTeam(2L);
+
+        verify(dailyEntryRepository, never()).findBySprint(any(Sprint.class));
+        verify(sprintReportRepository, never()).findBySprint(any(Sprint.class));
+        verify(sprintRepository).deleteAll(Collections.emptyList());
+        verify(teamRepository).delete(team);
+    }
+
+    @Test
+    void deveLancarExcecaoAoExcluirEquipeInexistente() {
+        when(teamRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> teamService.deleteTeam(99L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("não encontrada");
+
+        verify(teamRepository, never()).delete(any(Team.class));
     }
 }
