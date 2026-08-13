@@ -12,6 +12,8 @@
     </div>
     <nav class="topnav-links">
       <a class="topnav-link" th:href="@{/professor/panel}">Painel</a>
+      <a class="topnav-link" th:href="@{/professor/team/{id}/heatmap(id=${team.id})}">Heatmap de registros</a>
+      <a class="topnav-link" th:href="@{/professor/team/{id}/github/heatmap(id=${team.id})}">Heatmap GitHub</a>
     </nav>
   </div>
   <div class="topnav-right">
@@ -218,7 +220,9 @@
       <div></div>
       <div style="display:flex;gap:6px;justify-content:flex-end;">
         <a th:href="@{/professor/team/{teamId}/heatmap/{userId}(teamId=${team.id}, userId=${member.id})}"
-           class="btn btn-ghost btn-sm">Heatmap</a>
+           class="btn btn-ghost btn-sm">Heatmap registros</a>
+        <a th:href="@{/professor/team/{teamId}/github/heatmap/{userId}(teamId=${team.id}, userId=${member.id})}"
+           class="btn btn-ghost btn-sm">Heatmap GitHub</a>
       </div>
     </div>
 

@@ -2,6 +2,7 @@ package com.diariodebordo.diariobordo.controller;
 
 import com.diariodebordo.diariobordo.dto.AddMemberDTO;
 import com.diariodebordo.diariobordo.dto.DailyEntryDTO;
+import com.diariodebordo.diariobordo.dto.MemberHeatmapDTO;
 import com.diariodebordo.diariobordo.dto.SprintCreateDTO;
 import com.diariodebordo.diariobordo.dto.TeamCreateDTO;
 import com.diariodebordo.diariobordo.model.DailyEntry;
@@ -12,6 +13,7 @@ import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
+import com.diariodebordo.diariobordo.service.GitHubService;
 import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
@@ -54,6 +56,7 @@ public class TeamController {
     private final HistoryService historyService;
     private final SprintReportService sprintReportService;
     private final PdfExportService pdfExportService;
+    private final GitHubService gitHubService;
 
     public TeamController(TeamService teamService,
                           UserRepository userRepository,
@@ -63,7 +66,8 @@ public class TeamController {
                           SprintService sprintService,
                           HistoryService historyService,
                           SprintReportService sprintReportService,
-                          PdfExportService pdfExportService) {
+                          PdfExportService pdfExportService,
+                          GitHubService gitHubService) {
         this.teamService = teamService;
         this.userRepository = userRepository;
         this.dailyEntryService = dailyEntryService;
@@ -73,6 +77,7 @@ public class TeamController {
         this.historyService = historyService;
         this.sprintReportService = sprintReportService;
         this.pdfExportService = pdfExportService;
+        this.gitHubService = gitHubService;
     }
     
     @GetMapping("/team/create")
@@ -237,6 +242,28 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/leader/team/" + teamId;
+    }
+
+    @GetMapping("/team/{teamId}/github/heatmap")
+    public String teamGithubHeatmap(@PathVariable Long teamId,
+                                    Authentication auth,
+                                    Model model,
+                                    RedirectAttributes redirectAttributes) {
+        User leader = getAuthenticatedUser(auth);
+        Team team = teamService.getTeamWithMembers(teamId);
+
+        if (!team.getLeader().getId().equals(leader.getId())) {
+            redirectAttributes.addFlashAttribute("error", "Você não tem permissão para ver esta equipe");
+            return "redirect:/leader/dashboard";
+        }
+
+        List<MemberHeatmapDTO> memberHeatmaps = gitHubService.getTeamGithubHeatmapData(team, 90);
+
+        model.addAttribute("team", team);
+        model.addAttribute("memberHeatmaps", memberHeatmaps);
+        model.addAttribute("days", 90);
+
+        return "team/github-heatmap-geral";
     }
 
     @PostMapping("/team/{teamId}/entry")

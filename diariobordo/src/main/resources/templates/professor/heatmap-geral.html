@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Heatmap de registros da equipe')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <nav class="topnav-links">
+      <a class="topnav-link" th:href="@{/professor/panel}">Painel</a>
+      <a class="topnav-link" th:href="@{/professor/team/{id}(id=${team.id})}" th:text="${team.name}"></a>
+    </nav>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Page header ── -->
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Visão geral</div>
+      <h1 class="h1" style="margin:0;">Heatmap de registros — toda a equipe</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">
+        Atividade de registro diário de cada integrante nos últimos <span th:text="${days}"></span> dias.
+      </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a th:href="@{/professor/team/{id}/github/heatmap(id=${team.id})}" class="btn btn-ghost">Ver heatmap GitHub</a>
+      <a th:href="@{/professor/team/{id}(id=${team.id})}" class="btn btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Voltar à equipe
+      </a>
+    </div>
+  </div>
+
+  <div class="heatmap-legend" style="margin-bottom:16px;">
+    <span>Sem registro</span>
+    <div class="swatches">
+      <div class="sw" style="background:#EEF1F5;"></div>
+      <div class="sw" style="background:#C8DDF1;"></div>
+      <div class="sw" style="background:#8EBAE0;"></div>
+      <div class="sw" style="background:#4E8DC8;"></div>
+      <div class="sw" style="background:#185FA5;"></div>
+    </div>
+    <span>Mais ativo</span>
+  </div>
+
+  <div class="card" style="padding:0;">
+    <div th:each="mh, iter : ${memberHeatmaps}"
+         th:style="${!iter.last} ? 'padding:16px 20px;border-bottom:0.5px solid var(--border);' : 'padding:16px 20px;'">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div class="avatar avatar-sm"
+             th:style="'background:hsl(' + ${(mh.member.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+             th:text="${mh.member.name.length() >= 2 ? mh.member.name.substring(0,2).toUpperCase() : mh.member.name.toUpperCase()}">MB</div>
+        <div style="flex:1;">
+          <a th:href="@{/professor/team/{teamId}/heatmap/{userId}(teamId=${team.id}, userId=${mh.member.id})}"
+             style="font-size:13px;font-weight:600;color:inherit;text-decoration:none;" th:text="${mh.member.name}"></a>
+          <span th:if="${mh.member.id == team.leader.id}" class="badge badge-primary" style="margin-left:6px;">Líder</span>
+        </div>
+        <span class="mono" style="font-size:12px;color:var(--text-3);">
+          <span th:text="${mh.totalAtividade}"></span> / <span th:text="${days}"></span> dias registrados
+        </span>
+      </div>
+      <div class="heatmap-row">
+        <div th:each="cell : ${mh.heatmapData}"
+             class="heatmap-cell"
+             th:attr="data-level=${cell.date.isAfter(#temporals.createToday()) ? 'future' : (cell.count == 0 ? '0' : (cell.count == 1 ? '1' : (cell.count == 2 ? '2' : (cell.count == 3 ? '3' : '4'))))},
+                      data-date=${#temporals.format(cell.date, 'dd MMM yyyy')},
+                      data-fiz=${cell.summary}">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script th:src="@{/js/heatmap.js}"></script>
+</body>
+</html>

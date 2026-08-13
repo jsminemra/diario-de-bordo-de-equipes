@@ -1,6 +1,7 @@
 package com.diariodebordo.diariobordo.service;
 
 import com.diariodebordo.diariobordo.dto.HeatmapDataDTO;
+import com.diariodebordo.diariobordo.dto.MemberHeatmapDTO;
 import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
@@ -83,6 +84,25 @@ public class HeatmapService {
         }
 
         return heatmapData;
+    }
+
+    /**
+     * Heatmap "geral": um heatmap de registro por membro da equipe, pra
+     * visão de líder/professora comparando a atividade de todo mundo.
+     */
+    public List<MemberHeatmapDTO> getTeamHeatmapData(Team team, int days) {
+        List<MemberHeatmapDTO> result = new ArrayList<>();
+        for (User member : team.getMembers()) {
+            List<HeatmapDataDTO> data = getHeatmapData(member, days);
+            long total = data.stream().filter(d -> d.getCount() > 0).count();
+
+            MemberHeatmapDTO dto = new MemberHeatmapDTO();
+            dto.setMember(member);
+            dto.setHeatmapData(data);
+            dto.setTotalAtividade(total);
+            result.add(dto);
+        }
+        return result;
     }
 
     private List<HeatmapDataDTO> generateEmptyHeatmap(LocalDate startDate, LocalDate today) {
