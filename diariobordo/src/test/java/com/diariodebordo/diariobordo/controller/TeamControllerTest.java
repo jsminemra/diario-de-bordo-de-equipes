@@ -14,6 +14,7 @@ import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
+import com.diariodebordo.diariobordo.service.TaskBoardService;
 import com.diariodebordo.diariobordo.service.TeamService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,9 @@ class TeamControllerTest {
 
     @MockitoBean
     private GitHubService gitHubService;
+
+    @MockitoBean
+    private TaskBoardService taskBoardService;
 
     @Test
     void getCreateDeveRetornarStatus200EViewCreateTeam() throws Exception {

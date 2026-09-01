@@ -14,6 +14,7 @@
     <nav class="topnav-links">
       <a class="topnav-link active" th:href="@{/leader/team/{id}(id=${team.id})}">Hoje</a>
       <a class="topnav-link" th:href="@{/leader/team/{id}/history(id=${team.id})}">Histórico</a>
+      <a class="topnav-link" th:href="@{/tasks}">Tarefas</a>
       <a class="topnav-link" th:href="@{/leader/heatmap}">Meu heatmap</a>
       <a class="topnav-link" th:href="@{/github/link}">GitHub</a>
       <a class="topnav-link" th:href="@{/leader/team/{id}/github/heatmap(id=${team.id})}">Heatmap GitHub</a>
@@ -237,6 +238,39 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       MINHAS TAREFAS — sempre visível
+       ══════════════════════════════════════════════════════════════════ -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Minhas tarefas</div>
+        <div class="card-subtitle">User stories e tasks atribuídas a você.</div>
+      </div>
+      <a href="/tasks" class="btn btn-ghost btn-sm">Ver quadro</a>
+    </div>
+    <div class="card-body" th:if="${minhasTarefas != null and !minhasTarefas.isEmpty()}"
+         style="display:flex;flex-direction:column;gap:8px;">
+      <div th:each="item : ${minhasTarefas}"
+           style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--surface-2);border-radius:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;" th:text="${item.title}"></div>
+          <div class="tiny" style="margin-top:2px;">
+            <span th:text="${item.epicTitle}"></span>
+            <span th:if="${item.storyTitle != null}" th:text="' · ' + ${item.storyTitle}"></span>
+          </div>
+        </div>
+        <span class="badge" th:classappend="${statusBadgeClasses.get(item.status)}">
+          <span class="dot"></span>
+          <span th:text="${statusLabels.get(item.status)}"></span>
+        </span>
+      </div>
+    </div>
+    <div class="card-body" th:if="${minhasTarefas == null or minhasTarefas.isEmpty()}" style="text-align:center;color:var(--text-3);font-size:13px;">
+      Nenhuma tarefa atribuída a você no momento.
     </div>
   </div>
 

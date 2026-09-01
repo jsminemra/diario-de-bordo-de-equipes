@@ -5,12 +5,14 @@ import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.model.WorkStatus;
 import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
+import com.diariodebordo.diariobordo.service.TaskBoardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -41,12 +43,25 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DailyEntryController {
 
+    private static final Map<WorkStatus, String> STATUS_LABELS = Map.of(
+            WorkStatus.A_FAZER, "A Fazer",
+            WorkStatus.EM_ANDAMENTO, "Em Andamento",
+            WorkStatus.CONCLUIDA, "Concluída"
+    );
+
+    private static final Map<WorkStatus, String> STATUS_BADGE_CLASSES = Map.of(
+            WorkStatus.A_FAZER, "badge-neutral",
+            WorkStatus.EM_ANDAMENTO, "badge-primary",
+            WorkStatus.CONCLUIDA, "badge-success"
+    );
+
     private final DailyEntryService dailyEntryService;
     private final UserRepository userRepository;
     private final HistoryService historyService;
     private final SprintRepository sprintRepository;
     private final DailyEntryRepository dailyEntryRepository;
     private final SprintReportService sprintReportService;
+    private final TaskBoardService taskBoardService;
 
     @GetMapping("/entry/create")
     public String exibirFormulario(Model model, Authentication auth) {
@@ -114,6 +129,9 @@ public class DailyEntryController {
             model.addAttribute("diasRestantes", diasRestantes);
             model.addAttribute("temSprint", true);
             model.addAttribute("mensagem", null);
+            model.addAttribute("minhasTarefas", taskBoardService.getMyAssignments(user));
+            model.addAttribute("statusLabels", STATUS_LABELS);
+            model.addAttribute("statusBadgeClasses", STATUS_BADGE_CLASSES);
 
             return "member/feed";
 
@@ -127,6 +145,9 @@ public class DailyEntryController {
             model.addAttribute("jaRegistrou", false);
             model.addAttribute("entryHoje", null);
             model.addAttribute("membrosAusentes", List.of());
+            model.addAttribute("minhasTarefas", user != null ? taskBoardService.getMyAssignments(user) : List.of());
+            model.addAttribute("statusLabels", STATUS_LABELS);
+            model.addAttribute("statusBadgeClasses", STATUS_BADGE_CLASSES);
 
             return "member/feed";
         }

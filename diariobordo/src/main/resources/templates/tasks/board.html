@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Quadro de tarefas')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <div class="topnav-team" th:text="${team.name}"></div>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Tarefas</div>
+      <h1 class="h1" style="margin:0;">Quadro</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">Arraste os cartões entre as colunas para atualizar o status.</p>
+    </div>
+    <a href="/tasks/backlog" class="btn btn-primary btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Backlog / nova epic
+    </a>
+  </div>
+
+  <div th:if="${epics.isEmpty()}" class="card" style="text-align:center;padding:60px 20px;">
+    <div style="font-size:36px;margin-bottom:12px;">🗂️</div>
+    <p class="muted" style="margin:0 0 18px;font-size:13.5px;">Nenhuma epic criada ainda para esta equipe.</p>
+    <a href="/tasks/backlog" class="btn btn-primary">Criar a primeira epic</a>
+  </div>
+
+  <div th:unless="${epics.isEmpty()}" class="board-columns">
+
+    <div class="board-column" th:each="status : ${statuses}" th:data-status="${status}">
+      <div class="board-column-header">
+        <span class="board-column-title" th:text="${statusLabels.get(status)}"></span>
+        <span class="badge badge-neutral mono"
+              th:text="${storyCountByStatus.get(status) != null ? storyCountByStatus.get(status) : 0}"></span>
+      </div>
+
+      <div class="story-card" th:each="story : ${allStories}" th:if="${story.status == status}"
+           draggable="true" th:data-story-id="${story.id}">
+        <div class="story-card-epic" th:text="${story.epic.title}"></div>
+        <div class="story-card-title" th:text="${story.title}"></div>
+        <div class="story-card-footer">
+          <div th:if="${story.assignee != null}" class="avatar avatar-sm"
+               th:style="'background:hsl(' + ${(story.assignee.name.hashCode() % 360 + 360) % 360} + ',55%,38%)'"
+               th:text="${story.assignee.name.length() >= 2 ? story.assignee.name.substring(0,2).toUpperCase() : story.assignee.name.toUpperCase()}">??</div>
+          <span th:unless="${story.assignee != null}" class="tiny">Sem responsável</span>
+          <span class="story-card-progress"
+                th:with="tasks=${tasksByStory.get(story.id)}"
+                th:if="${tasks != null and !tasks.isEmpty()}"
+                th:text="${doneTaskCountByStoryId.get(story.id)} + '/' + ${#lists.size(tasks)} + ' tasks'"></span>
+        </div>
+
+        <div class="task-list" th:with="tasks=${tasksByStory.get(story.id)}" th:if="${tasks != null and !tasks.isEmpty()}">
+          <div class="task-row" th:each="task : ${tasks}">
+            <span class="task-row-title" th:classappend="${task.status.name() == 'CONCLUIDA'} ? 'done' : ''"
+                  th:text="${task.title} + (${task.assignee != null} ? ' · ' + ${task.assignee.name} : '')"></span>
+            <button type="button" class="task-status-btn" th:data-task-id="${task.id}" th:data-task-status="${task.status}">
+              <span th:text="${statusLabels.get(task.status)}"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script th:src="@{/js/board.js}"></script>
+</body>
+</html>

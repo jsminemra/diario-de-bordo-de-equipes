@@ -9,6 +9,7 @@ import com.diariodebordo.diariobordo.model.DailyEntry;
 import com.diariodebordo.diariobordo.model.Sprint;
 import com.diariodebordo.diariobordo.model.Team;
 import com.diariodebordo.diariobordo.model.User;
+import com.diariodebordo.diariobordo.model.WorkStatus;
 import com.diariodebordo.diariobordo.repository.DailyEntryRepository;
 import com.diariodebordo.diariobordo.repository.SprintRepository;
 import com.diariodebordo.diariobordo.repository.UserRepository;
@@ -18,6 +19,7 @@ import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.PdfExportService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
 import com.diariodebordo.diariobordo.service.SprintService;
+import com.diariodebordo.diariobordo.service.TaskBoardService;
 import com.diariodebordo.diariobordo.service.TeamService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -47,6 +49,18 @@ import java.util.stream.Collectors;
 @RequestMapping("/leader")
 public class TeamController {
 
+    private static final Map<WorkStatus, String> STATUS_LABELS = Map.of(
+            WorkStatus.A_FAZER, "A Fazer",
+            WorkStatus.EM_ANDAMENTO, "Em Andamento",
+            WorkStatus.CONCLUIDA, "Concluída"
+    );
+
+    private static final Map<WorkStatus, String> STATUS_BADGE_CLASSES = Map.of(
+            WorkStatus.A_FAZER, "badge-neutral",
+            WorkStatus.EM_ANDAMENTO, "badge-primary",
+            WorkStatus.CONCLUIDA, "badge-success"
+    );
+
     private final TeamService teamService;
     private final UserRepository userRepository;
     private final DailyEntryService dailyEntryService;
@@ -57,6 +71,7 @@ public class TeamController {
     private final SprintReportService sprintReportService;
     private final PdfExportService pdfExportService;
     private final GitHubService gitHubService;
+    private final TaskBoardService taskBoardService;
 
     public TeamController(TeamService teamService,
                           UserRepository userRepository,
@@ -67,7 +82,8 @@ public class TeamController {
                           HistoryService historyService,
                           SprintReportService sprintReportService,
                           PdfExportService pdfExportService,
-                          GitHubService gitHubService) {
+                          GitHubService gitHubService,
+                          TaskBoardService taskBoardService) {
         this.teamService = teamService;
         this.userRepository = userRepository;
         this.dailyEntryService = dailyEntryService;
@@ -78,6 +94,7 @@ public class TeamController {
         this.sprintReportService = sprintReportService;
         this.pdfExportService = pdfExportService;
         this.gitHubService = gitHubService;
+        this.taskBoardService = taskBoardService;
     }
     
     @GetMapping("/team/create")
@@ -173,6 +190,9 @@ public class TeamController {
             model.addAttribute("dailyEntryDTO", entryDTO);
             model.addAttribute("jaRegistrou", jaRegistrou);
             model.addAttribute("temSprint", temSprint);
+            model.addAttribute("minhasTarefas", taskBoardService.getMyAssignments(leader));
+            model.addAttribute("statusLabels", STATUS_LABELS);
+            model.addAttribute("statusBadgeClasses", STATUS_BADGE_CLASSES);
 
             return "team/team-detail";
         } catch (RuntimeException e) {
@@ -197,6 +217,9 @@ public class TeamController {
                 model.addAttribute("jaRegistrou", false);
                 model.addAttribute("temSprint", false);
                 model.addAttribute("sprintAtiva", null);
+                model.addAttribute("minhasTarefas", taskBoardService.getMyAssignments(getAuthenticatedUser(auth)));
+                model.addAttribute("statusLabels", STATUS_LABELS);
+                model.addAttribute("statusBadgeClasses", STATUS_BADGE_CLASSES);
                 return "team/team-detail";
             } catch (Exception e) {
                 redirectAttributes.addFlashAttribute("error", "Erro ao carregar página");

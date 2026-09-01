@@ -16,6 +16,7 @@
       <a class="topnav-link active" th:href="@{/member/feed}">Hoje</a>
       <a class="topnav-link" th:href="@{/member/heatmap}">Perfil</a>
       <a class="topnav-link" th:href="@{/member/history}">Histórico</a>
+      <a class="topnav-link" th:href="@{/tasks}">Tarefas</a>
       <a class="topnav-link" th:href="@{/github/link}">GitHub</a>
     </nav>
   </div>
@@ -129,6 +130,37 @@
       </div>
     </div>
 
+    <!-- ── Minhas tarefas ── -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Minhas tarefas</div>
+          <div class="card-subtitle">User stories e tasks atribuídas a você.</div>
+        </div>
+        <a href="/tasks" class="btn btn-ghost btn-sm">Ver quadro</a>
+      </div>
+      <div class="card-body" th:if="${minhasTarefas != null and !minhasTarefas.isEmpty()}"
+           style="display:flex;flex-direction:column;gap:8px;">
+        <div th:each="item : ${minhasTarefas}"
+             style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--surface-2);border-radius:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:600;" th:text="${item.title}"></div>
+            <div class="tiny" style="margin-top:2px;">
+              <span th:text="${item.epicTitle}"></span>
+              <span th:if="${item.storyTitle != null}" th:text="' · ' + ${item.storyTitle}"></span>
+            </div>
+          </div>
+          <span class="badge" th:classappend="${statusBadgeClasses.get(item.status)}">
+            <span class="dot"></span>
+            <span th:text="${statusLabels.get(item.status)}"></span>
+          </span>
+        </div>
+      </div>
+      <div class="card-body" th:if="${minhasTarefas == null or minhasTarefas.isEmpty()}" style="text-align:center;color:var(--text-3);font-size:13px;">
+        Nenhuma tarefa atribuída a você no momento.
+      </div>
+    </div>
+
     <!-- ── Feed section header ── -->
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:32px 0 14px;">
       <div>
@@ -212,12 +244,14 @@
 </div>
 
 <script>
-  /* auto-refresh do feed a cada 30 s */
-  var partialIds = ['section-feed-registros', 'feed-summary-text', 'card-registro-header', 'card-registro-body'];
+  /* auto-refresh do feed a cada 30 s — nunca toca no formulário de registro
+     do próprio usuário, para não apagar texto ainda não salvo (DA-01/84) */
+  var pollPartialIds = ['section-feed-registros', 'feed-summary-text'];
+  var submitPartialIds = ['section-feed-registros', 'feed-summary-text', 'card-registro-header', 'card-registro-body'];
 
-  function applyPartials(html) {
+  function applyPartials(html, ids) {
     var doc = new DOMParser().parseFromString(html, 'text/html');
-    partialIds.forEach(function (id) {
+    ids.forEach(function (id) {
       var fresh = doc.getElementById(id);
       var current = document.getElementById(id);
       if (fresh && current) current.innerHTML = fresh.innerHTML;
@@ -227,7 +261,7 @@
   function refreshFeed() {
     fetch(window.location.href, { credentials: 'same-origin' })
       .then(function (r) { if (r.redirected) return; return r.text(); })
-      .then(function (html) { if (html) applyPartials(html); })
+      .then(function (html) { if (html) applyPartials(html, pollPartialIds); })
       .catch(function () {});
   }
   setInterval(refreshFeed, 30000);
@@ -243,7 +277,7 @@
     fetch(form.action, { method: 'POST', credentials: 'same-origin', body: formData })
       .then(function (r) { return r.text(); })
       .then(function (html) {
-        applyPartials(html);
+        applyPartials(html, submitPartialIds);
 
         var toast = document.getElementById('registro-confirm-toast');
         if (toast) {

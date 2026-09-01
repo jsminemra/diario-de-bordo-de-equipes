@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/head :: commonHead('Backlog')}"></head>
+<body>
+
+<!-- ── Top Nav ── -->
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="topnav-brand">
+      <div class="mark">D</div>
+      <div>Diário de Bordo</div>
+    </div>
+    <div class="topnav-team" th:text="${team.name}"></div>
+  </div>
+  <div class="topnav-right">
+    <a href="/logout" class="btn btn-ghost btn-sm">Sair</a>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <div class="label" style="margin-bottom:6px;">Tarefas</div>
+      <h1 class="h1" style="margin:0;">Backlog</h1>
+      <p class="muted" style="margin:6px 0 0;font-size:13.5px;">Epics → User Stories → Tasks. Crie, atribua a um membro da equipe e acompanhe pelo quadro.</p>
+    </div>
+    <a href="/tasks" class="btn btn-ghost btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Ver quadro
+    </a>
+  </div>
+
+  <!-- flash messages -->
+  <div th:if="${success}"
+       style="background:var(--success-bg);color:var(--success);border-radius:8px;padding:10px 16px;
+              font-size:13px;margin-bottom:20px;border:0.5px solid rgba(21,128,61,0.15);"
+       th:text="${success}"></div>
+  <div th:if="${error}"
+       style="background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 16px;
+              font-size:13px;margin-bottom:20px;border:0.5px solid rgba(185,28,28,0.2);"
+       th:text="${error}"></div>
+
+  <!-- ══ Nova epic ══ -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Nova epic</div>
+        <div class="card-subtitle">Ex.: "Autenticação de Login" — um grande bloco de trabalho da equipe.</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/tasks/epics}" method="post" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="input-group" style="flex:2;min-width:220px;margin:0;">
+          <label class="input-label">Título</label>
+          <input class="input" type="text" name="title" placeholder="Ex.: Autenticação de Login" required>
+        </div>
+        <div class="input-group" style="flex:3;min-width:260px;margin:0;">
+          <label class="input-label">Descrição (opcional)</label>
+          <input class="input" type="text" name="description" placeholder="Contexto da epic">
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Criar epic
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ Árvore de epics ══ -->
+  <div th:if="${epics.isEmpty()}" class="card" style="text-align:center;padding:50px 20px;">
+    <p class="muted" style="margin:0;font-size:13.5px;">Nenhuma epic criada ainda. Comece criando uma acima.</p>
+  </div>
+
+  <div th:unless="${epics.isEmpty()}" class="card" style="padding:0;">
+    <div class="backlog-epic" th:each="epic : ${epics}">
+
+      <div class="backlog-epic-header">
+        <div>
+          <div class="card-title" th:text="${epic.title}"></div>
+          <div class="card-subtitle" th:if="${epic.description != null and !epic.description.isEmpty()}" th:text="${epic.description}"></div>
+        </div>
+        <span class="badge badge-neutral">
+          <span th:text="${storiesByEpic.get(epic.id) != null ? #lists.size(storiesByEpic.get(epic.id)) : 0}"></span>&nbsp;US
+        </span>
+      </div>
+
+      <!-- User stories da epic -->
+      <div th:with="stories=${storiesByEpic.get(epic.id)}">
+        <div class="backlog-story" th:each="story : ${stories}">
+          <div class="backlog-story-header">
+            <div>
+              <span th:text="${story.title}" style="font-weight:600;font-size:13.5px;"></span>
+              <span class="badge" th:classappend="${statusBadgeClasses.get(story.status)}" style="margin-left:8px;">
+                <span class="dot"></span><span th:text="${statusLabels.get(story.status)}"></span>
+              </span>
+            </div>
+            <form th:action="@{/tasks/stories/{id}/assign(id=${story.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
+              <select name="assigneeId" class="inline-select">
+                <option value="">Sem responsável</option>
+                <option th:each="member : ${team.members}" th:value="${member.id}"
+                        th:selected="${story.assignee != null and story.assignee.id == member.id}"
+                        th:text="${member.name}"></option>
+              </select>
+              <button type="submit" class="btn btn-ghost btn-sm">Atribuir</button>
+            </form>
+          </div>
+
+          <!-- Tasks da US -->
+          <div th:with="tasksDaStory=${tasksByStory.get(story.id)}">
+            <div class="backlog-task" th:each="task : ${tasksDaStory}">
+              <div>
+                <span th:text="${task.title}" style="font-size:12.5px;font-weight:600;"></span>
+                <span class="badge" th:classappend="${statusBadgeClasses.get(task.status)}" style="margin-left:8px;">
+                  <span class="dot"></span><span th:text="${statusLabels.get(task.status)}"></span>
+                </span>
+              </div>
+              <form th:action="@{/tasks/tasks/{id}/assign(id=${task.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
+                <select name="assigneeId" class="inline-select">
+                  <option value="">Sem responsável</option>
+                  <option th:each="member : ${team.members}" th:value="${member.id}"
+                          th:selected="${task.assignee != null and task.assignee.id == member.id}"
+                          th:text="${member.name}"></option>
+                </select>
+                <button type="submit" class="btn btn-ghost btn-sm">Atribuir</button>
+              </form>
+            </div>
+
+            <!-- nova task -->
+            <form th:action="@{/tasks/stories/{id}/tasks(id=${story.id})}" method="post"
+                  style="display:flex;gap:8px;align-items:center;margin:10px 0 0 16px;flex-wrap:wrap;">
+              <input class="input" style="flex:1;min-width:160px;padding:7px 10px;font-size:12.5px;"
+                     type="text" name="title" placeholder="Nova task…" required>
+              <select name="assigneeId" class="inline-select">
+                <option value="">Sem responsável</option>
+                <option th:each="member : ${team.members}" th:value="${member.id}" th:text="${member.name}"></option>
+              </select>
+              <button type="submit" class="btn btn-ghost btn-sm">+ Task</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- nova US -->
+        <form th:action="@{/tasks/epics/{id}/stories(id=${epic.id})}" method="post"
+              style="display:flex;gap:8px;align-items:center;margin:12px 0 0 18px;flex-wrap:wrap;">
+          <input class="input" style="flex:1;min-width:180px;"
+                 type="text" name="title" placeholder="Nova user story…" required>
+          <select name="assigneeId" class="inline-select">
+            <option value="">Sem responsável</option>
+            <option th:each="member : ${team.members}" th:value="${member.id}" th:text="${member.name}"></option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">+ User Story</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

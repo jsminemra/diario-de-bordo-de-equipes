@@ -11,6 +11,7 @@ import com.diariodebordo.diariobordo.service.CustomUserDetailsService;
 import com.diariodebordo.diariobordo.service.DailyEntryService;
 import com.diariodebordo.diariobordo.service.HistoryService;
 import com.diariodebordo.diariobordo.service.SprintReportService;
+import com.diariodebordo.diariobordo.service.TaskBoardService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -59,6 +60,9 @@ class DailyEntryControllerTest {
 
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private TaskBoardService taskBoardService;
 
     // ─── GET /member/history ─────────────────────────────────────────────────
 

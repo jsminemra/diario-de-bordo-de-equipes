@@ -668,6 +668,55 @@ body { font-family: var(--font); color: var(--text); margin: 0; }
 .kpi-card { }
 .kpi-value { font-family: var(--mono); font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 6px; }
 
+/* board (epics/user stories/tasks) */
+.board-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
+.board-column {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  min-height: 120px;
+  transition: background .15s;
+}
+.board-column.drag-over { background: var(--primary-50); border-color: var(--primary-300); }
+.board-column-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 12px; }
+.board-column-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); }
+.story-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+}
+.story-card:last-child { margin-bottom: 0; }
+.story-card.dragging { opacity: 0.4; }
+.story-card-epic { font-size: 10.5px; font-weight: 600; color: var(--primary-700); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.story-card-title { font-size: 13.5px; font-weight: 600; line-height: 1.4; margin-bottom: 10px; }
+.story-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.story-card-progress { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+.task-list { margin-top: 12px; padding-top: 10px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.task-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; padding: 6px 8px; background: var(--surface-2); border-radius: 7px;
+}
+.task-row-title { flex: 1; }
+.task-row-title.done { text-decoration: line-through; color: var(--text-3); }
+.task-status-btn { background: none; border: 0.5px solid var(--border-strong); border-radius: 6px; padding: 3px 8px; font-size: 10.5px; cursor: pointer; color: var(--text-2); }
+.task-status-btn:hover { background: var(--surface); }
+
+/* backlog tree */
+.backlog-epic { border-bottom: 0.5px solid var(--border); padding: 16px 22px; }
+.backlog-epic:last-child { border-bottom: none; }
+.backlog-epic-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.backlog-story { margin: 10px 0 0 18px; padding: 10px 14px; background: var(--surface-2); border-radius: 9px; }
+.backlog-story + .backlog-story { margin-top: 8px; }
+.backlog-story-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.backlog-task { margin: 8px 0 0 16px; padding: 8px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 7px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.backlog-task + .backlog-task { margin-top: 6px; }
+.inline-select { font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 0.5px solid var(--border-strong); background: var(--surface); color: var(--text); }
+
 @media print {
   .report-toolbar { display: none !important; }
   .report-doc { border: none; box-shadow: none; padding: 0; width: 100%; }
